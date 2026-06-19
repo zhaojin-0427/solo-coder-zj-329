@@ -63,7 +63,7 @@ const mockStats: StatisticsData = {
     ],
     byCategory: { '书法': 1, '剪纸': 1, '布艺': 1 },
     byType: { entry: 1, return: 2 },
-    byProcessStatus: { pending: 1, processing: 1, resolved: 1 }
+    byProcessStatus: { pending: 1, processing: 1, resolved: 4 }
   },
   total: { artworks: 8, exhibitions: 2, subscriptions: 5, pickupRecords: 3, handoverRecords: 6 }
 };

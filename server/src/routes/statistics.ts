@@ -1,7 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { store } from '../data/store';
+import type { HandoverCheckItems } from '../types/handover';
 
 const router = Router();
+
+function hasHandoverException(checkItems: HandoverCheckItems | undefined, exceptionDescription: string | undefined): boolean {
+  const checkAbnormal = checkItems
+    ? !checkItems.packagingOk || !checkItems.noDamage || !checkItems.noMissing
+    : false;
+  const hasDescription = !!(exceptionDescription && exceptionDescription.trim());
+  return checkAbnormal || hasDescription;
+}
 
 router.get('/', (req: Request, res: Response) => {
   const categoryStats = getCategoryStats();
@@ -106,7 +115,9 @@ function getHandoverStats() {
   const completedRecords = store.handoverRecords.filter(h => h.processStatus === 'resolved').length;
   const completionRate = totalRecords > 0 ? Math.round((completedRecords / totalRecords) * 100) : 100;
 
-  const exceptionRecords = store.handoverRecords.filter(h => h.exceptionDescription && h.exceptionDescription.trim());
+  const exceptionRecords = store.handoverRecords.filter(h =>
+    hasHandoverException(h.checkItems, h.exceptionDescription)
+  );
   const totalExceptions = exceptionRecords.length;
 
   const pendingExceptions = exceptionRecords
@@ -141,7 +152,7 @@ function getHandoverStats() {
   });
 
   const byProcessStatus: Record<string, number> = {};
-  exceptionRecords.forEach(h => {
+  store.handoverRecords.forEach(h => {
     byProcessStatus[h.processStatus] = (byProcessStatus[h.processStatus] || 0) + 1;
   });
 

@@ -17,7 +17,21 @@ const HANDOVER_TYPE_TO_STATUS: Record<HandoverType, ArtworkStatus> = {
   return: 'returned'
 };
 
+const VALID_HANDOVER_TYPES: HandoverType[] = ['entry', 'sale', 'return'];
+
+function hasHandoverException(checkItems: HandoverCheckItems | undefined, exceptionDescription: string | undefined): boolean {
+  const checkAbnormal = checkItems
+    ? !checkItems.packagingOk || !checkItems.noDamage || !checkItems.noMissing
+    : false;
+  const hasDescription = !!(exceptionDescription && exceptionDescription.trim());
+  return checkAbnormal || hasDescription;
+}
+
 function validateArtworkTransition(artworkId: string, type: HandoverType): { valid: boolean; message?: string } {
+  if (!VALID_HANDOVER_TYPES.includes(type)) {
+    return { valid: false, message: '交接类型非法，仅支持入展交接、成交交接、返还交接' };
+  }
+
   const artwork = store.artworks.find(a => a.id === artworkId);
   if (!artwork) {
     return { valid: false, message: '作品不存在' };
@@ -145,10 +159,10 @@ router.post('/', (req: Request, res: Response) => {
     ...checkItems
   };
 
-  const defaultProcessStatus: HandoverProcessStatus =
-    exceptionDescription && exceptionDescription.trim()
-      ? (processStatus || 'pending')
-      : (processStatus || 'resolved');
+  const hasException = hasHandoverException(defaultCheckItems, exceptionDescription);
+  const defaultProcessStatus: HandoverProcessStatus = hasException
+    ? (processStatus || 'pending')
+    : (processStatus || 'resolved');
 
   const newRecord = store.addHandoverRecord({
     artworkId,
