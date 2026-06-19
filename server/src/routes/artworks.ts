@@ -5,7 +5,7 @@ import type { Artwork } from '../types/artwork';
 const router = Router();
 
 router.get('/', (req: Request, res: Response) => {
-  const { category, status, exhibitionId } = req.query;
+  const { category, status, exhibitionId, keyword } = req.query;
   let filtered = [...store.artworks];
   
   if (category) {
@@ -16,6 +16,15 @@ router.get('/', (req: Request, res: Response) => {
   }
   if (exhibitionId) {
     filtered = filtered.filter(a => a.exhibitionId === exhibitionId);
+  }
+  if (keyword && typeof keyword === 'string' && keyword.trim()) {
+    const kw = keyword.trim().toLowerCase();
+    filtered = filtered.filter(a =>
+      a.title.toLowerCase().includes(kw) ||
+      a.author.toLowerCase().includes(kw) ||
+      a.description.toLowerCase().includes(kw) ||
+      a.theme.toLowerCase().includes(kw)
+    );
   }
   
   res.json(filtered);

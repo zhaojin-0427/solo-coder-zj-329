@@ -5,6 +5,7 @@ import exhibitionsRouter from './routes/exhibitions';
 import subscriptionsRouter from './routes/subscriptions';
 import pickupsRouter from './routes/pickups';
 import statisticsRouter from './routes/statistics';
+import revenuesRouter from './routes/revenues';
 
 const app = express();
 const PORT = 9502;
@@ -17,6 +18,7 @@ app.use('/api/exhibitions', exhibitionsRouter);
 app.use('/api/subscriptions', subscriptionsRouter);
 app.use('/api/pickups', pickupsRouter);
 app.use('/api/statistics', statisticsRouter);
+app.use('/api/revenues', revenuesRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '服务器运行正常' });

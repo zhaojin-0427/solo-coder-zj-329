@@ -3,6 +3,7 @@ import type { Artwork } from '../types/artwork';
 import type { Exhibition } from '../types/exhibition';
 import type { Subscription } from '../types/subscription';
 import type { PickupRecord } from '../types/pickup';
+import type { RevenueRecord } from '../types/revenue';
 
 const now = new Date().toISOString();
 
@@ -234,11 +235,45 @@ const pickupRecords: PickupRecord[] = [
   }
 ];
 
+const revenueRecords: RevenueRecord[] = [
+  {
+    id: 'rev-001',
+    artworkId: 'art-003',
+    subscriptionId: 'sub-002',
+    author: '李锦绣',
+    totalAmount: 1200,
+    authorShare: 840,
+    platformShare: 360,
+    authorRatio: 70,
+    status: 'distributed',
+    dealDate: '2024-03-25T10:00:00.000Z',
+    distributeDate: '2024-03-28T14:00:00.000Z',
+    operator: '管理员',
+    remarks: '百子图刺绣作品成交收益已发放'
+  },
+  {
+    id: 'rev-002',
+    artworkId: 'art-001',
+    subscriptionId: 'sub-005',
+    author: '王羲之',
+    totalAmount: 2000,
+    authorShare: 1400,
+    platformShare: 600,
+    authorRatio: 70,
+    status: 'pending',
+    dealDate: '2024-06-19T11:00:00.000Z',
+    distributeDate: null,
+    operator: '管理员',
+    remarks: '等待统一结算发放'
+  }
+];
+
 export const store = {
   artworks,
   exhibitions,
   subscriptions,
   pickupRecords,
+  revenueRecords,
 
   addArtwork(artwork: Omit<Artwork, 'id' | 'createdAt' | 'updatedAt'>): Artwork {
     const newArtwork: Artwork = {
@@ -326,5 +361,28 @@ export const store = {
     };
     this.pickupRecords.push(newRecord);
     return newRecord;
+  },
+
+  addRevenueRecord(record: Omit<RevenueRecord, 'id'>): RevenueRecord {
+    const newRecord: RevenueRecord = {
+      ...record,
+      id: uuidv4()
+    };
+    this.revenueRecords.push(newRecord);
+    return newRecord;
+  },
+
+  updateRevenueRecord(id: string, updates: Partial<RevenueRecord>): RevenueRecord | null {
+    const index = this.revenueRecords.findIndex(r => r.id === id);
+    if (index === -1) return null;
+    this.revenueRecords[index] = { ...this.revenueRecords[index], ...updates, id };
+    return this.revenueRecords[index];
+  },
+
+  deleteRevenueRecord(id: string): boolean {
+    const index = this.revenueRecords.findIndex(r => r.id === id);
+    if (index === -1) return false;
+    this.revenueRecords.splice(index, 1);
+    return true;
   }
 };

@@ -69,17 +69,9 @@ function PickupsPage() {
       message.success('登记成功');
       setModalVisible(false);
       fetchData();
-    } catch {
-      const values = form.getFieldsValue();
-      const newRecord: PickupRecord = {
-        ...values,
-        id: `pick-${Date.now()}`,
-        pickupDate: values.pickupDate ? values.pickupDate.format('YYYY-MM-DD') : new Date().toISOString().split('T')[0],
-        subscriptionId: values.subscriptionId || null
-      };
-      setRecords([newRecord, ...records]);
-      message.success('登记成功');
-      setModalVisible(false);
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || err?.message || '登记失败，请检查填写内容';
+      message.error(errorMsg);
     }
   };
 
@@ -250,16 +242,21 @@ function PickupsPage() {
             <Form.Item
               name="recipientName"
               label="领取人姓名"
+              rules={[{ required: true, message: '请输入领取人姓名' }]}
               style={{ flex: 1 }}
             >
-              <Input placeholder="取件时填写" />
+              <Input placeholder="请输入领取人姓名" />
             </Form.Item>
             <Form.Item
               name="recipientPhone"
               label="领取人电话"
+              rules={[
+                { required: true, message: '请输入领取人电话' },
+                { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号' }
+              ]}
               style={{ flex: 1 }}
             >
-              <Input placeholder="取件时填写" />
+              <Input placeholder="请输入11位手机号" />
             </Form.Item>
           </div>
           <Form.Item
