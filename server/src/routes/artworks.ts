@@ -39,6 +39,16 @@ router.get('/:id', (req: Request, res: Response) => {
   res.json(artwork);
 });
 
+router.get('/:id/latest-handover', (req: Request, res: Response) => {
+  const artwork = store.artworks.find(a => a.id === req.params.id);
+  if (!artwork) {
+    res.status(404).json({ message: '作品不存在' });
+    return;
+  }
+  const latest = store.getLatestHandoverByArtwork(req.params.id);
+  res.json(latest);
+});
+
 router.post('/', (req: Request, res: Response) => {
   const { title, author, category, size, material, status, description, theme, exhibitionId } = req.body;
   

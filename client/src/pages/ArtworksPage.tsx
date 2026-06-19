@@ -18,8 +18,12 @@ import {
   updateArtwork,
   deleteArtwork
 } from '../api/artwork';
+import { getHandovers } from '../api/handover';
 import type { Artwork, ArtworkStatus, ArtworkCategory } from '../types/artwork';
 import { ARTWORK_STATUS_MAP, ARTWORK_CATEGORIES } from '../types/artwork';
+import type { HandoverRecord } from '../types/handover';
+import { HANDOVER_TYPE_MAP, HANDOVER_PROCESS_STATUS_MAP } from '../types/handover';
+import dayjs from 'dayjs';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -35,6 +39,7 @@ const mockArtworks: Artwork[] = [
 
 function ArtworksPage() {
   const [artworks, setArtworks] = useState<Artwork[]>([]);
+  const [handovers, setHandovers] = useState<HandoverRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Artwork | null>(null);
@@ -55,9 +60,26 @@ function ArtworksPage() {
     }
   };
 
+  const fetchHandovers = async () => {
+    try {
+      const data = await getHandovers();
+      setHandovers(data);
+    } catch {
+      setHandovers([]);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchHandovers();
   }, [categoryFilter, statusFilter, keyword]);
+
+  const getLatestHandover = (artworkId: string): HandoverRecord | null => {
+    const records = handovers
+      .filter(h => h.artworkId === artworkId)
+      .sort((a, b) => new Date(b.handoverTime).getTime() - new Date(a.handoverTime).getTime());
+    return records.length > 0 ? records[0] : null;
+  };
 
   const handleAdd = () => {
     setEditingRecord(null);
@@ -169,6 +191,34 @@ function ArtworksPage() {
       render: (status: ArtworkStatus) => getStatusTag(status)
     },
     {
+      title: '最近交接',
+      key: 'latestHandover',
+      width: 200,
+      render: (_: unknown, record: Artwork) => {
+        const latest = getLatestHandover(record.id);
+        if (!latest) {
+          return <span style={{ color: '#999' }}>暂无交接记录</span>;
+        }
+        const typeColor: Record<string, string> = { entry: 'blue', sale: 'green', return: 'orange' };
+        const statusColor: Record<string, string> = { pending: 'red', processing: 'gold', resolved: 'green' };
+        return (
+          <div>
+            <div style={{ marginBottom: 4 }}>
+              <Tag color={typeColor[latest.type]} style={{ marginRight: 6 }}>
+                {HANDOVER_TYPE_MAP[latest.type]}
+              </Tag>
+              <Tag color={statusColor[latest.processStatus]}>
+                {HANDOVER_PROCESS_STATUS_MAP[latest.processStatus]}
+              </Tag>
+            </div>
+            <div style={{ fontSize: 12, color: '#999' }}>
+              {dayjs(latest.handoverTime).format('MM-DD HH:mm')} · {latest.handlerName}
+            </div>
+          </div>
+        );
+      }
+    },
+    {
       title: '描述',
       dataIndex: 'description',
       key: 'description',
@@ -252,7 +302,7 @@ function ArtworksPage() {
             rowKey="id"
             loading={loading}
             pagination={{ pageSize: 10, showSizeChanger: true }}
-            scroll={{ x: 1200 }}
+            scroll={{ x: 1500 }}
           />
         </div>
       </div>

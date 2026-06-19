@@ -1,3 +1,5 @@
+import type { HandoverType, HandoverProcessStatus } from './handover';
+
 export interface CategoryStats {
   [key: string]: number;
 }
@@ -30,11 +32,35 @@ export interface UncollectedStats {
   };
 }
 
+export interface PendingHandoverException {
+  id: string;
+  artworkId: string;
+  artworkTitle: string;
+  artworkCategory: string;
+  type: HandoverType;
+  exceptionDescription: string;
+  processStatus: HandoverProcessStatus;
+  handlerName: string;
+  handoverTime: string;
+}
+
+export interface HandoverStats {
+  totalRecords: number;
+  completedRecords: number;
+  completionRate: number;
+  totalExceptions: number;
+  pendingExceptions: PendingHandoverException[];
+  byCategory: { [key: string]: number };
+  byType: { [key in HandoverType]?: number };
+  byProcessStatus: { [key in HandoverProcessStatus]?: number };
+}
+
 export interface TotalStats {
   artworks: number;
   exhibitions: number;
   subscriptions: number;
   pickupRecords: number;
+  handoverRecords: number;
 }
 
 export interface StatisticsData {
@@ -42,5 +68,6 @@ export interface StatisticsData {
   exhibitionStats: ExhibitionStat[];
   authorStats: AuthorStat[];
   uncollectedStats: UncollectedStats;
+  handoverStats: HandoverStats;
   total: TotalStats;
 }

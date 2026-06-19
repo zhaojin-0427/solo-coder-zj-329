@@ -8,6 +8,7 @@ const menuItems = [
   { key: '/exhibitions', label: '展期管理' },
   { key: '/subscriptions', label: '认购登记' },
   { key: '/pickups', label: '取件流转' },
+  { key: '/handovers', label: '交接清单' },
   { key: '/revenues', label: '收益分配' },
   { key: '/statistics', label: '统计分析' }
 ];

@@ -8,17 +8,20 @@ router.get('/', (req: Request, res: Response) => {
   const exhibitionStats = getExhibitionStats();
   const authorStats = getAuthorStats();
   const uncollectedStats = getUncollectedStats();
+  const handoverStats = getHandoverStats();
 
   res.json({
     categoryStats,
     exhibitionStats,
     authorStats,
     uncollectedStats,
+    handoverStats,
     total: {
       artworks: store.artworks.length,
       exhibitions: store.exhibitions.length,
       subscriptions: store.subscriptions.length,
-      pickupRecords: store.pickupRecords.length
+      pickupRecords: store.pickupRecords.length,
+      handoverRecords: store.handoverRecords.length
     }
   });
 });
@@ -95,6 +98,62 @@ function getUncollectedStats() {
     totalPending: pendingSubscriptions.length,
     byPickupMethod,
     byArtworkCategory: byArtwork
+  };
+}
+
+function getHandoverStats() {
+  const totalRecords = store.handoverRecords.length;
+  const completedRecords = store.handoverRecords.filter(h => h.processStatus === 'resolved').length;
+  const completionRate = totalRecords > 0 ? Math.round((completedRecords / totalRecords) * 100) : 100;
+
+  const exceptionRecords = store.handoverRecords.filter(h => h.exceptionDescription && h.exceptionDescription.trim());
+  const totalExceptions = exceptionRecords.length;
+
+  const pendingExceptions = exceptionRecords
+    .filter(h => h.processStatus !== 'resolved')
+    .map(h => {
+      const artwork = store.artworks.find(a => a.id === h.artworkId);
+      return {
+        id: h.id,
+        artworkId: h.artworkId,
+        artworkTitle: artwork?.title || '',
+        artworkCategory: artwork?.category || '',
+        type: h.type,
+        exceptionDescription: h.exceptionDescription,
+        processStatus: h.processStatus,
+        handlerName: h.handlerName,
+        handoverTime: h.handoverTime
+      };
+    })
+    .sort((a, b) => new Date(b.handoverTime).getTime() - new Date(a.handoverTime).getTime());
+
+  const byCategory: Record<string, number> = {};
+  exceptionRecords.forEach(h => {
+    const artwork = store.artworks.find(a => a.id === h.artworkId);
+    if (artwork) {
+      byCategory[artwork.category] = (byCategory[artwork.category] || 0) + 1;
+    }
+  });
+
+  const byType: Record<string, number> = {};
+  exceptionRecords.forEach(h => {
+    byType[h.type] = (byType[h.type] || 0) + 1;
+  });
+
+  const byProcessStatus: Record<string, number> = {};
+  exceptionRecords.forEach(h => {
+    byProcessStatus[h.processStatus] = (byProcessStatus[h.processStatus] || 0) + 1;
+  });
+
+  return {
+    totalRecords,
+    completedRecords,
+    completionRate,
+    totalExceptions,
+    pendingExceptions,
+    byCategory,
+    byType,
+    byProcessStatus
   };
 }
 

@@ -5,6 +5,7 @@ import ArtworksPage from './pages/ArtworksPage';
 import ExhibitionsPage from './pages/ExhibitionsPage';
 import SubscriptionsPage from './pages/SubscriptionsPage';
 import PickupsPage from './pages/PickupsPage';
+import HandoversPage from './pages/HandoversPage';
 import RevenuesPage from './pages/RevenuesPage';
 import StatisticsPage from './pages/StatisticsPage';
 
@@ -21,6 +22,7 @@ function App() {
           <Route path="/exhibitions" element={<ExhibitionsPage />} />
           <Route path="/subscriptions" element={<SubscriptionsPage />} />
           <Route path="/pickups" element={<PickupsPage />} />
+          <Route path="/handovers" element={<HandoversPage />} />
           <Route path="/revenues" element={<RevenuesPage />} />
           <Route path="/statistics" element={<StatisticsPage />} />
         </Routes>

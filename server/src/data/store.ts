@@ -4,6 +4,7 @@ import type { Exhibition } from '../types/exhibition';
 import type { Subscription } from '../types/subscription';
 import type { PickupRecord } from '../types/pickup';
 import type { RevenueRecord } from '../types/revenue';
+import type { HandoverRecord, HandoverType, HandoverProcessStatus } from '../types/handover';
 
 const now = new Date().toISOString();
 
@@ -268,12 +269,112 @@ const revenueRecords: RevenueRecord[] = [
   }
 ];
 
+const handoverRecords: HandoverRecord[] = [
+  {
+    id: 'han-001',
+    artworkId: 'art-001',
+    type: 'entry',
+    handlerName: '张管理员',
+    handlerPhone: '13800000001',
+    handoverTime: '2024-06-10T09:30:00.000Z',
+    artworkStatusAtHandover: 'draft',
+    checkItems: { packagingOk: true, noDamage: true, noMissing: true },
+    photoDescription: '作品完整无损，包装完好，已拍照存档',
+    exceptionDescription: '',
+    processStatus: 'resolved',
+    processorName: '张管理员',
+    createdAt: '2024-06-10T09:30:00.000Z',
+    updatedAt: '2024-06-10T09:30:00.000Z'
+  },
+  {
+    id: 'han-002',
+    artworkId: 'art-003',
+    type: 'sale',
+    handlerName: '李管理员',
+    handlerPhone: '13800000002',
+    handoverTime: '2024-03-25T14:00:00.000Z',
+    artworkStatusAtHandover: 'showing',
+    checkItems: { packagingOk: true, noDamage: true, noMissing: true },
+    photoDescription: '作品经买家验收无误，已拍照确认',
+    exceptionDescription: '',
+    processStatus: 'resolved',
+    processorName: '李管理员',
+    createdAt: '2024-03-25T14:00:00.000Z',
+    updatedAt: '2024-03-25T14:00:00.000Z'
+  },
+  {
+    id: 'han-003',
+    artworkId: 'art-004',
+    type: 'return',
+    handlerName: '王管理员',
+    handlerPhone: '13800000003',
+    handoverTime: '2024-04-01T10:00:00.000Z',
+    artworkStatusAtHandover: 'showing',
+    checkItems: { packagingOk: true, noDamage: false, noMissing: true, notes: '画框边缘有轻微划痕' },
+    photoDescription: '已拍摄划痕细节照片',
+    exceptionDescription: '画框边缘有轻微划痕，需确认是否为展期造成',
+    processStatus: 'processing',
+    processorName: '王管理员',
+    createdAt: '2024-04-01T10:00:00.000Z',
+    updatedAt: '2024-04-02T15:00:00.000Z'
+  },
+  {
+    id: 'han-004',
+    artworkId: 'art-005',
+    type: 'entry',
+    handlerName: '赵管理员',
+    handlerPhone: '13800000004',
+    handoverTime: '2024-06-15T11:00:00.000Z',
+    artworkStatusAtHandover: 'draft',
+    checkItems: { packagingOk: true, noDamage: true, noMissing: true },
+    photoDescription: '印章外包装完好，实物核对一致',
+    exceptionDescription: '',
+    processStatus: 'resolved',
+    processorName: '赵管理员',
+    createdAt: '2024-06-15T11:00:00.000Z',
+    updatedAt: '2024-06-15T11:00:00.000Z'
+  },
+  {
+    id: 'han-005',
+    artworkId: 'art-002',
+    type: 'return',
+    handlerName: '孙管理员',
+    handlerPhone: '13800000005',
+    handoverTime: '2024-06-10T14:30:00.000Z',
+    artworkStatusAtHandover: 'showing',
+    checkItems: { packagingOk: true, noDamage: true, noMissing: true },
+    photoDescription: '剪纸作品完好，包装完整',
+    exceptionDescription: '',
+    processStatus: 'resolved',
+    processorName: '孙管理员',
+    createdAt: '2024-06-10T14:30:00.000Z',
+    updatedAt: '2024-06-10T14:30:00.000Z'
+  },
+  {
+    id: 'han-006',
+    artworkId: 'art-007',
+    type: 'entry',
+    handlerName: '周管理员',
+    handlerPhone: '13800000006',
+    handoverTime: '2024-06-14T10:00:00.000Z',
+    artworkStatusAtHandover: 'draft',
+    checkItems: { packagingOk: false, noDamage: true, noMissing: true, notes: '外包装盒有轻微压痕，内部作品无损' },
+    photoDescription: '外包装压痕已拍照，内部作品检查无误',
+    exceptionDescription: '外包装盒有轻微压痕，不影响作品本身',
+    processStatus: 'pending',
+    processorName: '',
+    createdAt: '2024-06-14T10:00:00.000Z',
+    updatedAt: '2024-06-14T10:00:00.000Z'
+  }
+];
+
 export const store = {
   artworks,
   exhibitions,
   subscriptions,
   pickupRecords,
   revenueRecords,
+  handoverRecords,
 
   addArtwork(artwork: Omit<Artwork, 'id' | 'createdAt' | 'updatedAt'>): Artwork {
     const newArtwork: Artwork = {
@@ -384,5 +485,42 @@ export const store = {
     if (index === -1) return false;
     this.revenueRecords.splice(index, 1);
     return true;
+  },
+
+  addHandoverRecord(record: Omit<HandoverRecord, 'id' | 'createdAt' | 'updatedAt'>): HandoverRecord {
+    const newRecord: HandoverRecord = {
+      ...record,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.handoverRecords.push(newRecord);
+    return newRecord;
+  },
+
+  updateHandoverRecord(id: string, updates: Partial<HandoverRecord>): HandoverRecord | null {
+    const index = this.handoverRecords.findIndex(h => h.id === id);
+    if (index === -1) return null;
+    this.handoverRecords[index] = {
+      ...this.handoverRecords[index],
+      ...updates,
+      id,
+      updatedAt: new Date().toISOString()
+    };
+    return this.handoverRecords[index];
+  },
+
+  deleteHandoverRecord(id: string): boolean {
+    const index = this.handoverRecords.findIndex(h => h.id === id);
+    if (index === -1) return false;
+    this.handoverRecords.splice(index, 1);
+    return true;
+  },
+
+  getLatestHandoverByArtwork(artworkId: string): HandoverRecord | null {
+    const records = this.handoverRecords
+      .filter(h => h.artworkId === artworkId)
+      .sort((a, b) => new Date(b.handoverTime).getTime() - new Date(a.handoverTime).getTime());
+    return records.length > 0 ? records[0] : null;
   }
 };
