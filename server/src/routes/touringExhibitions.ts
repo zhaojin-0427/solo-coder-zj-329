@@ -127,6 +127,25 @@ router.post('/', (req: Request, res: Response) => {
     return;
   }
   
+  const invalidArtworkIds: string[] = [];
+  const unavailableArtworks: string[] = [];
+  for (const aid of artworkIds) {
+    const artwork = store.artworks.find(a => a.id === aid);
+    if (!artwork) {
+      invalidArtworkIds.push(aid);
+    } else if (artwork.status === 'sold' || artwork.status === 'returned') {
+      unavailableArtworks.push(`${artwork.title}(${artwork.status === 'sold' ? '已成交' : '已返还'})`);
+    }
+  }
+  if (invalidArtworkIds.length > 0) {
+    res.status(400).json({ message: `以下作品ID不存在：${invalidArtworkIds.join('、')}` });
+    return;
+  }
+  if (unavailableArtworks.length > 0) {
+    res.status(400).json({ message: `以下作品状态不可用于巡展：${unavailableArtworks.join('、')}` });
+    return;
+  }
+  
   if (artworkIds.length > venue.maxArtworkCount) {
     res.status(400).json({ message: `拟展作品数量(${artworkIds.length})超过场地容量(${venue.maxArtworkCount})` });
     return;
@@ -187,6 +206,25 @@ router.put('/:id', (req: Request, res: Response) => {
   const venue = store.touringVenues.find(v => v.id === finalVenueId);
   if (!venue) {
     res.status(400).json({ message: '所选场地不存在' });
+    return;
+  }
+  
+  const invalidArtworkIds: string[] = [];
+  const unavailableArtworks: string[] = [];
+  for (const aid of finalArtworkIds) {
+    const artwork = store.artworks.find(a => a.id === aid);
+    if (!artwork) {
+      invalidArtworkIds.push(aid);
+    } else if (artwork.status === 'sold' || artwork.status === 'returned') {
+      unavailableArtworks.push(`${artwork.title}(${artwork.status === 'sold' ? '已成交' : '已返还'})`);
+    }
+  }
+  if (invalidArtworkIds.length > 0) {
+    res.status(400).json({ message: `以下作品ID不存在：${invalidArtworkIds.join('、')}` });
+    return;
+  }
+  if (unavailableArtworks.length > 0) {
+    res.status(400).json({ message: `以下作品状态不可用于巡展：${unavailableArtworks.join('、')}` });
     return;
   }
   
@@ -259,8 +297,12 @@ router.post('/:id/reject', (req: Request, res: Response) => {
     res.status(400).json({ message: '只有待审核的预约可以驳回' });
     return;
   }
+  if (!rejectionReason || typeof rejectionReason !== 'string' || !rejectionReason.trim()) {
+    res.status(400).json({ message: '驳回原因为必填项' });
+    return;
+  }
   
-  const updated = store.reviewTouringExhibition(req.params.id, 'rejected', rejectionReason);
+  const updated = store.reviewTouringExhibition(req.params.id, 'rejected', rejectionReason.trim());
   res.json(updated);
 });
 

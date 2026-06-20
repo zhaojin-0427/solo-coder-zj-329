@@ -24,6 +24,13 @@ export const ARTWORK_STATUS_MAP: Record<ArtworkStatus, string> = {
   sold: '已售出'
 };
 
+export const ARTWORK_STATUS_COLOR: Record<ArtworkStatus, string> = {
+  draft: 'default',
+  showing: 'green',
+  returned: 'orange',
+  sold: 'red'
+};
+
 export const ARTWORK_CATEGORIES: ArtworkCategory[] = [
   '书法',
   '剪纸',

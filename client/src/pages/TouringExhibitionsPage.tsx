@@ -58,7 +58,7 @@ import { getArtworks } from '../api/artwork';
 import type { TouringVenue, TouringExhibition, TouringExhibitionReviewStatus } from '../types/touringExhibition';
 import { TOURING_REVIEW_STATUS_MAP, TOURING_REVIEW_STATUS_COLOR, TRANSPORT_METHOD_OPTIONS } from '../types/touringExhibition';
 import type { Artwork } from '../types/artwork';
-import { ARTWORK_STATUS_MAP } from '../types/artwork';
+import { ARTWORK_STATUS_MAP, ARTWORK_STATUS_COLOR } from '../types/artwork';
 import dayjs, { Dayjs } from 'dayjs';
 
 const { Option } = Select;
@@ -68,7 +68,9 @@ const { RangePicker } = DatePicker;
 interface ArtworkSelectItem extends Artwork {
   isConflict?: boolean;
   isOccupied?: boolean;
+  isUnavailable?: boolean;
   conflictInfo?: string;
+  unavailableInfo?: string;
 }
 
 function TouringExhibitionsPage() {
@@ -135,7 +137,18 @@ function TouringExhibitionsPage() {
   const fetchArtworks = async () => {
     try {
       const data = await getArtworks();
-      setArtworks(data.map(a => ({ ...a, isConflict: false, isOccupied: false })));
+      setArtworks(data.map(a => {
+        const isUnavailable = a.status === 'sold' || a.status === 'returned';
+        return {
+          ...a,
+          isConflict: false,
+          isOccupied: false,
+          isUnavailable,
+          unavailableInfo: isUnavailable
+            ? `该作品已${a.status === 'sold' ? '成交' : '返还'}，不可用于巡展`
+            : ''
+        };
+      }));
     } catch (e) {
       console.error(e);
       setArtworks([]);
@@ -731,18 +744,18 @@ function TouringExhibitionsPage() {
                 loading={artworksChecking}
               >
                 <Checkbox
-                  indeterminate={selectedArtworkIds.length > 0 && selectedArtworkIds.length < artworks.length}
-                  checked={artworks.length > 0 && selectedArtworkIds.length === artworks.filter(a => !a.isConflict).length}
+                  indeterminate={selectedArtworkIds.length > 0 && selectedArtworkIds.length < artworks.filter(a => !a.isConflict && !a.isUnavailable).length}
+                  checked={artworks.length > 0 && selectedArtworkIds.length === artworks.filter(a => !a.isConflict && !a.isUnavailable).length}
                   onChange={(e) => {
                     if (e.target.checked) {
-                      setSelectedArtworkIds(artworks.filter(a => !a.isConflict).map(a => a.id));
+                      setSelectedArtworkIds(artworks.filter(a => !a.isConflict && !a.isUnavailable).map(a => a.id));
                     } else {
                       setSelectedArtworkIds([]);
                     }
                   }}
                   style={{ marginBottom: 12 }}
                 >
-                  全选（排除冲突作品）
+                  全选（排除冲突与不可用作品）
                 </Checkbox>
                 <Divider style={{ margin: '8px 0' }} />
                 <List
@@ -752,7 +765,7 @@ function TouringExhibitionsPage() {
                       <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: 12 }}>
                         <Checkbox
                           checked={selectedArtworkIds.includes(artwork.id)}
-                          disabled={artwork.isConflict}
+                          disabled={artwork.isConflict || artwork.isUnavailable}
                           onChange={(e) => {
                             if (e.target.checked) {
                               setSelectedArtworkIds([...selectedArtworkIds, artwork.id]);
@@ -762,11 +775,18 @@ function TouringExhibitionsPage() {
                           }}
                         />
                         <div style={{ flex: 1 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 500 }}>{artwork.title}</span>
                             <Tag color="blue">{artwork.category}</Tag>
-                            <Tag>{ARTWORK_STATUS_MAP[artwork.status]}</Tag>
-                            {(artwork.isConflict || artwork.isOccupied) && (
+                            <Tag color={ARTWORK_STATUS_COLOR[artwork.status]}>{ARTWORK_STATUS_MAP[artwork.status]}</Tag>
+                            {artwork.isUnavailable && (
+                              <Tooltip title={artwork.unavailableInfo}>
+                                <Tag color="default" icon={<StopOutlined />}>
+                                  不可用
+                                </Tag>
+                              </Tooltip>
+                            )}
+                            {(artwork.isConflict || artwork.isOccupied) && !artwork.isUnavailable && (
                               <Tooltip title={artwork.conflictInfo}>
                                 <Tag color="red" icon={<ExclamationCircleOutlined />}>
                                   {artwork.isConflict ? '同期已占用' : '巡展中'}
