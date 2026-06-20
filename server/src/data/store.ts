@@ -7,6 +7,7 @@ import type { RevenueRecord } from '../types/revenue';
 import type { HandoverRecord, HandoverType, HandoverProcessStatus } from '../types/handover';
 import type { TouringVenue, TouringExhibition, TouringExhibitionReviewStatus } from '../types/touringExhibition';
 import type { TransportBatch, TransportArtworkCheck, InsuranceClaim, TransportStatus, TransportCheckStatus, TransportReceiveConclusion, ClaimStatus } from '../types/transportDelivery';
+import type { Volunteer, DocentActivity, VolunteerAssignment, DocentActivityStatus } from '../types/docentActivity';
 
 const now = new Date().toISOString();
 
@@ -580,6 +581,133 @@ const insuranceClaims: InsuranceClaim[] = [
   }
 ];
 
+const volunteers: Volunteer[] = [
+  {
+    id: 'vol-001',
+    name: '张文静',
+    phone: '13800001001',
+    expertiseCategory: '书法',
+    availableTimeSlots: '周一至周五 9:00-17:00',
+    organization: '阳光社区文化站',
+    remarks: '擅长书法类作品讲解，有三年志愿讲解经验',
+    createdAt: '2024-06-18T09:00:00.000Z',
+    updatedAt: '2024-06-18T09:00:00.000Z'
+  },
+  {
+    id: 'vol-002',
+    name: '李艺涵',
+    phone: '13800001002',
+    expertiseCategory: '剪纸',
+    availableTimeSlots: '周末 9:00-17:00',
+    organization: '阳光社区文化站',
+    remarks: '剪纸非遗传承爱好者，表达清晰',
+    createdAt: '2024-06-18T09:10:00.000Z',
+    updatedAt: '2024-06-18T09:10:00.000Z'
+  },
+  {
+    id: 'vol-003',
+    name: '王篆生',
+    phone: '13800001003',
+    expertiseCategory: '篆刻',
+    availableTimeSlots: '周三、周五 14:00-17:00',
+    organization: '市图书馆志愿队',
+    remarks: '篆刻研究爱好者，可配合开展印章体验',
+    createdAt: '2024-06-18T09:20:00.000Z',
+    updatedAt: '2024-06-18T09:20:00.000Z'
+  },
+  {
+    id: 'vol-004',
+    name: '赵布心',
+    phone: '13800001004',
+    expertiseCategory: '布艺',
+    availableTimeSlots: '全天可服务',
+    organization: '幸福志愿团',
+    remarks: '擅长布艺类讲解，可承担现场引导工作',
+    createdAt: '2024-06-19T10:00:00.000Z',
+    updatedAt: '2024-06-19T10:00:00.000Z'
+  },
+  {
+    id: 'vol-005',
+    name: '孙讲解',
+    phone: '13800001005',
+    expertiseCategory: '书法',
+    availableTimeSlots: '周一至周五 9:00-12:00',
+    organization: '市图书馆志愿队',
+    remarks: '退休教师，讲解风格亲和',
+    createdAt: '2024-06-19T10:10:00.000Z',
+    updatedAt: '2024-06-19T10:10:00.000Z'
+  }
+];
+
+const docentActivities: DocentActivity[] = [
+  {
+    id: 'da-001',
+    touringExhibitionId: 'tour-001',
+    theme: '书法与剪纸艺术赏析',
+    docentDate: '2024-07-02',
+    startTime: '09:00',
+    endTime: '11:00',
+    venueId: 'venue-001',
+    artworkIds: ['art-001', 'art-002'],
+    manager: '王管理员',
+    volunteerAssignments: [
+      { volunteerId: 'vol-001', role: '主讲' },
+      { volunteerId: 'vol-002', role: '助理' }
+    ],
+    expectedAttendees: 30,
+    status: 'completed',
+    actualAttendees: 28,
+    audienceFeedback: '观众反响热烈，互动积极，建议后续增加书法现场体验环节',
+    exceptionRemarks: '',
+    createdAt: '2024-06-25T10:00:00.000Z',
+    updatedAt: '2024-07-02T11:30:00.000Z'
+  },
+  {
+    id: 'da-002',
+    touringExhibitionId: 'tour-001',
+    theme: '篆刻文化讲堂',
+    docentDate: '2024-07-04',
+    startTime: '14:00',
+    endTime: '16:00',
+    venueId: 'venue-001',
+    artworkIds: ['art-005'],
+    manager: '李管理员',
+    volunteerAssignments: [
+      { volunteerId: 'vol-003', role: '主讲' },
+      { volunteerId: 'vol-004', role: '引导' }
+    ],
+    expectedAttendees: 20,
+    status: 'ongoing',
+    actualAttendees: null,
+    audienceFeedback: '',
+    exceptionRemarks: '',
+    createdAt: '2024-06-26T09:00:00.000Z',
+    updatedAt: '2024-07-04T14:10:00.000Z'
+  },
+  {
+    id: 'da-003',
+    touringExhibitionId: 'tour-001',
+    theme: '非遗综合讲解',
+    docentDate: '2024-07-06',
+    startTime: '10:00',
+    endTime: '11:30',
+    venueId: 'venue-001',
+    artworkIds: ['art-001', 'art-002', 'art-005'],
+    manager: '王管理员',
+    volunteerAssignments: [
+      { volunteerId: 'vol-001', role: '主讲' },
+      { volunteerId: 'vol-005', role: '助理' }
+    ],
+    expectedAttendees: 40,
+    status: 'scheduled',
+    actualAttendees: null,
+    audienceFeedback: '',
+    exceptionRemarks: '',
+    createdAt: '2024-06-28T14:00:00.000Z',
+    updatedAt: '2024-06-28T14:00:00.000Z'
+  }
+];
+
 export const store = {
   artworks,
   exhibitions,
@@ -591,6 +719,8 @@ export const store = {
   touringExhibitions,
   transportBatches,
   insuranceClaims,
+  volunteers,
+  docentActivities,
 
   addArtwork(artwork: Omit<Artwork, 'id' | 'createdAt' | 'updatedAt'>): Artwork {
     const newArtwork: Artwork = {
@@ -959,5 +1089,119 @@ export const store = {
       .sort((a, b) => new Date(b.batch.actualOutboundTime || b.batch.plannedOutboundTime || b.batch.createdAt).getTime()
         - new Date(a.batch.actualOutboundTime || a.batch.plannedOutboundTime || a.batch.createdAt).getTime());
     return checks.length > 0 ? { batch: checks[0].batch, check: checks[0].check! } : null;
+  },
+
+  addVolunteer(volunteer: Omit<Volunteer, 'id' | 'createdAt' | 'updatedAt'>): Volunteer {
+    const newVolunteer: Volunteer = {
+      ...volunteer,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.volunteers.push(newVolunteer);
+    return newVolunteer;
+  },
+
+  updateVolunteer(id: string, updates: Partial<Volunteer>): Volunteer | null {
+    const index = this.volunteers.findIndex(v => v.id === id);
+    if (index === -1) return null;
+    this.volunteers[index] = {
+      ...this.volunteers[index],
+      ...updates,
+      id,
+      updatedAt: new Date().toISOString()
+    };
+    return this.volunteers[index];
+  },
+
+  deleteVolunteer(id: string): boolean {
+    const index = this.volunteers.findIndex(v => v.id === id);
+    if (index === -1) return false;
+    this.volunteers.splice(index, 1);
+    return true;
+  },
+
+  addDocentActivity(activity: Omit<DocentActivity, 'id' | 'createdAt' | 'updatedAt' | 'status' | 'actualAttendees' | 'audienceFeedback' | 'exceptionRemarks'>): DocentActivity {
+    const newActivity: DocentActivity = {
+      ...activity,
+      id: uuidv4(),
+      status: 'scheduled',
+      actualAttendees: null,
+      audienceFeedback: '',
+      exceptionRemarks: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.docentActivities.push(newActivity);
+    return newActivity;
+  },
+
+  updateDocentActivity(id: string, updates: Partial<DocentActivity>): DocentActivity | null {
+    const index = this.docentActivities.findIndex(a => a.id === id);
+    if (index === -1) return null;
+    this.docentActivities[index] = {
+      ...this.docentActivities[index],
+      ...updates,
+      id,
+      updatedAt: new Date().toISOString()
+    };
+    return this.docentActivities[index];
+  },
+
+  setDocentActivityStatus(id: string, status: DocentActivityStatus): DocentActivity | null {
+    return this.updateDocentActivity(id, { status });
+  },
+
+  registerDocentAttendance(id: string, actualAttendees: number, audienceFeedback: string, exceptionRemarks: string): DocentActivity | null {
+    return this.updateDocentActivity(id, { actualAttendees, audienceFeedback, exceptionRemarks });
+  },
+
+  timeToMinutes(time: string): number {
+    const [h, m] = time.split(':').map(Number);
+    return h * 60 + m;
+  },
+
+  isTimeOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
+    const s1 = this.timeToMinutes(start1);
+    const e1 = this.timeToMinutes(end1);
+    const s2 = this.timeToMinutes(start2);
+    const e2 = this.timeToMinutes(end2);
+    return s1 < e2 && s2 < e1;
+  },
+
+  checkVolunteerConflict(volunteerId: string, docentDate: string, startTime: string, endTime: string, excludeActivityId?: string): DocentActivity | null {
+    for (const activity of this.docentActivities) {
+      if (activity.id === excludeActivityId) continue;
+      if (activity.status === 'canceled') continue;
+      if (activity.docentDate !== docentDate) continue;
+      if (!activity.volunteerAssignments.some(a => a.volunteerId === volunteerId)) continue;
+      if (this.isTimeOverlap(startTime, endTime, activity.startTime, activity.endTime)) {
+        return activity;
+      }
+    }
+    return null;
+  },
+
+  getDocentActivitiesByTouring(touringExhibitionId: string): DocentActivity[] {
+    return this.docentActivities
+      .filter(a => a.touringExhibitionId === touringExhibitionId)
+      .sort((a, b) => a.docentDate.localeCompare(b.docentDate) || a.startTime.localeCompare(b.startTime));
+  },
+
+  getDocentActivitiesByArtwork(artworkId: string): DocentActivity[] {
+    return this.docentActivities
+      .filter(a => a.artworkIds.includes(artworkId) && a.status !== 'canceled')
+      .sort((a, b) => new Date(b.docentDate).getTime() - new Date(a.docentDate).getTime());
+  },
+
+  getLatestDocentActivityByArtwork(artworkId: string): DocentActivity | null {
+    const activities = this.getDocentActivitiesByArtwork(artworkId);
+    return activities.length > 0 ? activities[0] : null;
+  },
+
+  getVolunteerServiceCount(volunteerId: string): number {
+    return this.docentActivities
+      .filter(a => a.status !== 'canceled' && a.volunteerAssignments.some(v => v.volunteerId === volunteerId))
+      .length;
   }
 };

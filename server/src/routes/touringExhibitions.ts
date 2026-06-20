@@ -84,6 +84,30 @@ router.get('/:id', (req: Request, res: Response) => {
     };
   });
 
+  const docentActivities = store.getDocentActivitiesByTouring(ex.id).map(activity => {
+    const volunteerAssignments = activity.volunteerAssignments.map(assignment => {
+      const v = store.volunteers.find(vol => vol.id === assignment.volunteerId);
+      return {
+        volunteerId: assignment.volunteerId,
+        name: v?.name || '',
+        role: assignment.role
+      };
+    });
+    return {
+      id: activity.id,
+      theme: activity.theme,
+      docentDate: activity.docentDate,
+      startTime: activity.startTime,
+      endTime: activity.endTime,
+      status: activity.status,
+      manager: activity.manager,
+      expectedAttendees: activity.expectedAttendees,
+      actualAttendees: activity.actualAttendees,
+      artworkCount: activity.artworkIds.length,
+      volunteerAssignments
+    };
+  });
+
   res.json({
     ...ex,
     venueName: venue?.name || '',
@@ -95,7 +119,8 @@ router.get('/:id', (req: Request, res: Response) => {
       category: a!.category,
       status: a!.status
     })),
-    transportBatches
+    transportBatches,
+    docentActivities
   });
 });
 

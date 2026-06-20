@@ -37,7 +37,9 @@ import {
   PhoneOutlined,
   TeamOutlined,
   CarOutlined,
-  UserOutlined
+  UserOutlined,
+  SoundOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import type { TabsProps } from 'antd';
 import type { TableColumnsType } from 'antd';
@@ -60,6 +62,7 @@ import { TOURING_REVIEW_STATUS_MAP, TOURING_REVIEW_STATUS_COLOR, TRANSPORT_METHO
 import type { Artwork } from '../types/artwork';
 import { ARTWORK_STATUS_MAP, ARTWORK_STATUS_COLOR } from '../types/artwork';
 import { TRANSPORT_STATUS_MAP, TRANSPORT_STATUS_COLOR } from '../types/transportDelivery';
+import { DOCENT_ACTIVITY_STATUS_MAP, DOCENT_ACTIVITY_STATUS_COLOR } from '../types/docentActivity';
 import dayjs, { Dayjs } from 'dayjs';
 
 const { Option } = Select;
@@ -930,6 +933,59 @@ function TouringExhibitionsPage() {
               ) : (
                 <div style={{ color: '#999', padding: '12px 0', textAlign: 'center' }}>
                   暂无关联运输批次
+                </div>
+              )}
+            </div>
+
+            <Divider />
+            <div>
+              <div style={{ fontWeight: 500, marginBottom: 12 }}>
+                <SoundOutlined style={{ marginRight: 6 }} />
+                关联讲解活动与志愿者安排（共 {detailExhibition.docentActivities?.length || 0} 场）
+              </div>
+              {detailExhibition.docentActivities && detailExhibition.docentActivities.length > 0 ? (
+                <List
+                  size="small"
+                  bordered
+                  dataSource={detailExhibition.docentActivities}
+                  renderItem={(activity) => (
+                    <List.Item>
+                      <div style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                          <SoundOutlined style={{ color: '#13c2c2' }} />
+                          <span style={{ fontWeight: 500 }}>{activity.theme}</span>
+                          <Tag color={DOCENT_ACTIVITY_STATUS_COLOR[activity.status]}>
+                            {DOCENT_ACTIVITY_STATUS_MAP[activity.status]}
+                          </Tag>
+                          <Tag color="blue">{activity.artworkCount} 件作品</Tag>
+                        </div>
+                        <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                          <CalendarOutlined style={{ marginRight: 4 }} />
+                          {activity.docentDate}{' '}
+                          <ClockCircleOutlined style={{ marginRight: 4, marginLeft: 8 }} />
+                          {activity.startTime}-{activity.endTime}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#999', marginBottom: 4 }}>
+                          <TeamOutlined style={{ marginRight: 4 }} />
+                          讲解负责人：{activity.manager || '-'} · 预计 {activity.expectedAttendees} 人
+                          {activity.actualAttendees !== null && ` · 签到 ${activity.actualAttendees} 人`}
+                        </div>
+                        {activity.volunteerAssignments && activity.volunteerAssignments.length > 0 && (
+                          <div>
+                            {activity.volunteerAssignments.map((v, i) => (
+                              <Tag key={i} color="purple" style={{ marginBottom: 4 }}>
+                                {v.name}（{v.role}）
+                              </Tag>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              ) : (
+                <div style={{ color: '#999', padding: '12px 0', textAlign: 'center' }}>
+                  暂无关联讲解活动
                 </div>
               )}
             </div>

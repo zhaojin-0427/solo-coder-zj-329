@@ -1,5 +1,6 @@
 import type { ArtworkStatus, ArtworkCategory } from './artwork';
 import type { TransportStatus } from './transportDelivery';
+import type { TouringDocentActivitySummary } from './docentActivity';
 
 export type TouringExhibitionReviewStatus = 'pending' | 'approved' | 'rejected' | 'canceled';
 
@@ -44,6 +45,7 @@ export interface TouringExhibition {
   venueAddress?: string;
   artworkDetails?: TouringArtworkDetail[];
   transportBatches?: TouringExhibitionTransportBatch[];
+  docentActivities?: TouringDocentActivitySummary[];
 }
 
 export interface TouringExhibitionTransportBatch {

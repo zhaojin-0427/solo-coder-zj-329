@@ -20,6 +20,7 @@ router.get('/', (req: Request, res: Response) => {
   const handoverStats = getHandoverStats();
   const touringStats = getTouringStats();
   const transportDeliveryStats = getTransportDeliveryStats();
+  const docentActivityStats = getDocentActivityStats();
 
   res.json({
     categoryStats,
@@ -29,6 +30,7 @@ router.get('/', (req: Request, res: Response) => {
     handoverStats,
     touringStats,
     transportDeliveryStats,
+    docentActivityStats,
     total: {
       artworks: store.artworks.length,
       exhibitions: store.exhibitions.length,
@@ -38,7 +40,9 @@ router.get('/', (req: Request, res: Response) => {
       touringVenues: store.touringVenues.length,
       touringExhibitions: store.touringExhibitions.length,
       transportBatches: store.transportBatches.filter(b => b.transportStatus !== 'canceled').length,
-      insuranceClaims: store.insuranceClaims.length
+      insuranceClaims: store.insuranceClaims.length,
+      docentVolunteers: store.volunteers.length,
+      docentActivities: store.docentActivities.filter(a => a.status !== 'canceled').length
     }
   });
 });
@@ -402,6 +406,149 @@ function getTransportDeliveryStats() {
     unsettledClaims,
     byStatus,
     byClaimStatus
+  };
+}
+
+function getDocentActivityStats() {
+  const activeActivities = store.docentActivities.filter(a => a.status !== 'canceled');
+  const totalActivities = activeActivities.length;
+
+  const completedCount = activeActivities.filter(a => a.status === 'completed').length;
+  const completionRate = totalActivities > 0
+    ? Math.round((completedCount / totalActivities) * 100)
+    : 0;
+
+  const byStatus: Record<string, number> = {};
+  activeActivities.forEach(a => {
+    byStatus[a.status] = (byStatus[a.status] || 0) + 1;
+  });
+
+  const volunteerServiceMap: Record<string, { volunteerId: string; name: string; expertiseCategory: string; organization: string; count: number }> = {};
+  activeActivities.forEach(activity => {
+    activity.volunteerAssignments.forEach(assignment => {
+      const volunteer = store.volunteers.find(v => v.id === assignment.volunteerId);
+      if (!volunteerServiceMap[assignment.volunteerId]) {
+        volunteerServiceMap[assignment.volunteerId] = {
+          volunteerId: assignment.volunteerId,
+          name: volunteer?.name || assignment.volunteerId,
+          expertiseCategory: volunteer?.expertiseCategory || '',
+          organization: volunteer?.organization || '',
+          count: 0
+        };
+      }
+      volunteerServiceMap[assignment.volunteerId].count++;
+    });
+  });
+  const volunteerServiceRanking = Object.values(volunteerServiceMap)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  const venueMap: Record<string, number> = {};
+  activeActivities.forEach(activity => {
+    const venue = store.touringVenues.find(v => v.id === activity.venueId);
+    const venueName = venue?.name || '未指定场地';
+    venueMap[venueName] = (venueMap[venueName] || 0) + 1;
+  });
+  const venueDistribution = Object.entries(venueMap)
+    .map(([venueName, count]) => ({ venueName, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const artworkDocentMap: Record<string, { artworkId: string; title: string; author: string; count: number }> = {};
+  activeActivities.forEach(activity => {
+    activity.artworkIds.forEach(artworkId => {
+      const artwork = store.artworks.find(a => a.id === artworkId);
+      if (!artworkDocentMap[artworkId]) {
+        artworkDocentMap[artworkId] = {
+          artworkId,
+          title: artwork?.title || artworkId,
+          author: artwork?.author || '',
+          count: 0
+        };
+      }
+      artworkDocentMap[artworkId].count++;
+    });
+  });
+  const artworkDocentRanking = Object.values(artworkDocentMap)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const next7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const next7DaysStr = next7Days.toISOString().split('T')[0];
+
+  const upcomingDocentList = activeActivities
+    .filter(a => a.status === 'scheduled' && a.docentDate >= todayStr && a.docentDate <= next7DaysStr)
+    .map(activity => {
+      const tour = store.touringExhibitions.find(e => e.id === activity.touringExhibitionId);
+      const venue = store.touringVenues.find(v => v.id === activity.venueId);
+      const volunteers = activity.volunteerAssignments.map(assignment => {
+        const v = store.volunteers.find(vol => vol.id === assignment.volunteerId);
+        return { id: assignment.volunteerId, name: v?.name || '', role: assignment.role };
+      });
+      return {
+        id: activity.id,
+        theme: activity.theme,
+        bookingUnit: tour?.bookingUnit || '',
+        venueName: venue?.name || '',
+        docentDate: activity.docentDate,
+        startTime: activity.startTime,
+        endTime: activity.endTime,
+        manager: activity.manager,
+        expectedAttendees: activity.expectedAttendees,
+        artworkCount: activity.artworkIds.length,
+        volunteers
+      };
+    })
+    .sort((a, b) => a.docentDate.localeCompare(b.docentDate) || a.startTime.localeCompare(b.startTime));
+
+  const volunteerActivitiesMap: Record<string, typeof activeActivities> = {};
+  activeActivities.forEach(activity => {
+    activity.volunteerAssignments.forEach(assignment => {
+      if (!volunteerActivitiesMap[assignment.volunteerId]) {
+        volunteerActivitiesMap[assignment.volunteerId] = [];
+      }
+      volunteerActivitiesMap[assignment.volunteerId].push(activity);
+    });
+  });
+
+  let conflictCount = 0;
+  const conflictDetails: Array<{ volunteerName: string; theme: string; docentDate: string; startTime: string; endTime: string }> = [];
+  Object.values(volunteerActivitiesMap).forEach(list => {
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        if (
+          list[i].docentDate === list[j].docentDate &&
+          store.isTimeOverlap(list[i].startTime, list[i].endTime, list[j].startTime, list[j].endTime)
+        ) {
+          conflictCount++;
+          const volunteer = store.volunteers.find(v =>
+            list[i].volunteerAssignments.some(a => a.volunteerId === v.id) &&
+            list[j].volunteerAssignments.some(a => a.volunteerId === v.id)
+          );
+          conflictDetails.push({
+            volunteerName: volunteer?.name || '',
+            theme: `${list[i].theme} / ${list[j].theme}`,
+            docentDate: list[i].docentDate,
+            startTime: list[i].startTime,
+            endTime: list[i].endTime
+          });
+        }
+      }
+    }
+  });
+
+  return {
+    totalActivities,
+    completedCount,
+    completionRate,
+    byStatus,
+    volunteerServiceRanking,
+    venueDistribution,
+    artworkDocentRanking,
+    upcomingDocentList,
+    conflictCount,
+    conflictDetails
   };
 }
 

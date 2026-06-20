@@ -109,6 +109,41 @@ router.get('/:id/latest-transport-check', (req: Request, res: Response) => {
   });
 });
 
+router.get('/:id/latest-docent-activity', (req: Request, res: Response) => {
+  const artwork = store.artworks.find(a => a.id === req.params.id);
+  if (!artwork) {
+    res.status(404).json({ message: '作品不存在' });
+    return;
+  }
+  const latest = store.getLatestDocentActivityByArtwork(req.params.id);
+  if (!latest) {
+    res.json(null);
+    return;
+  }
+  const tour = store.touringExhibitions.find(e => e.id === latest.touringExhibitionId);
+  const venue = store.touringVenues.find(v => v.id === latest.venueId);
+  const volunteerNames = latest.volunteerAssignments.map(assignment => {
+    const v = store.volunteers.find(vol => vol.id === assignment.volunteerId);
+    return v ? `${v.name}（${assignment.role}）` : assignment.volunteerId;
+  });
+  res.json({
+    activityId: latest.id,
+    touringExhibitionId: latest.touringExhibitionId,
+    bookingUnit: tour?.bookingUnit || '',
+    theme: latest.theme,
+    docentDate: latest.docentDate,
+    startTime: latest.startTime,
+    endTime: latest.endTime,
+    venueName: venue?.name || '',
+    manager: latest.manager,
+    status: latest.status,
+    expectedAttendees: latest.expectedAttendees,
+    actualAttendees: latest.actualAttendees,
+    audienceFeedback: latest.audienceFeedback,
+    volunteerNames
+  });
+});
+
 router.post('/', (req: Request, res: Response) => {
   const { title, author, category, size, material, status, description, theme, exhibitionId } = req.body;
   

@@ -13,13 +13,15 @@ import {
   TrophyOutlined,
   ClockCircleOutlined,
   FireOutlined,
-  SafetyCertificateOutlined
+  SafetyCertificateOutlined,
+  SoundOutlined
 } from '@ant-design/icons';
 import { getStatistics } from '../api/statistics';
 import type { StatisticsData } from '../types/statistics';
 import type { HandoverType, HandoverProcessStatus } from '../types/handover';
 import { HANDOVER_TYPE_MAP, HANDOVER_PROCESS_STATUS_MAP } from '../types/handover';
 import { CLAIM_STATUS_MAP, CLAIM_STATUS_COLOR } from '../types/transportDelivery';
+import { DOCENT_ACTIVITY_STATUS_MAP, DOCENT_ACTIVITY_STATUS_COLOR } from '../types/docentActivity';
 import dayjs from 'dayjs';
 
 const mockStats: StatisticsData = {
@@ -138,6 +140,40 @@ const mockStats: StatisticsData = {
     byStatus: { delivered: 1 },
     byClaimStatus: { processing: 1 }
   },
+  docentActivityStats: {
+    totalActivities: 3,
+    completedCount: 1,
+    completionRate: 33,
+    byStatus: { completed: 1, ongoing: 1, scheduled: 1 },
+    volunteerServiceRanking: [
+      { volunteerId: 'vol-001', name: '李讲解', expertiseCategory: '书法', organization: '老年大学', count: 2 },
+      { volunteerId: 'vol-002', name: '王助理', expertiseCategory: '剪纸', organization: '社区志愿者协会', count: 1 }
+    ],
+    venueDistribution: [
+      { venueName: '阳光社区活动中心', count: 3 }
+    ],
+    artworkDocentRanking: [
+      { artworkId: 'art-001', title: '宁静致远', author: '王羲之', count: 2 },
+      { artworkId: 'art-002', title: '喜鹊登梅', author: '张爱华', count: 2 }
+    ],
+    upcomingDocentList: [
+      {
+        id: 'da-003',
+        theme: '书法艺术赏析讲解',
+        bookingUnit: '阳光社区居委会',
+        venueName: '阳光社区活动中心',
+        docentDate: dayjs().add(3, 'day').format('YYYY-MM-DD'),
+        startTime: '14:00',
+        endTime: '16:00',
+        manager: '李讲解',
+        expectedAttendees: 30,
+        artworkCount: 3,
+        volunteers: [{ id: 'vol-001', name: '李讲解', role: '主讲' }]
+      }
+    ],
+    conflictCount: 0,
+    conflictDetails: []
+  },
   total: {
     artworks: 8,
     exhibitions: 2,
@@ -147,7 +183,9 @@ const mockStats: StatisticsData = {
     touringVenues: 3,
     touringExhibitions: 3,
     transportBatches: 1,
-    insuranceClaims: 1
+    insuranceClaims: 1,
+    docentVolunteers: 5,
+    docentActivities: 3
   }
 };
 
@@ -316,6 +354,20 @@ function StatisticsPage() {
             <SafetyCertificateOutlined style={{ fontSize: 32, color: '#f5222d', marginBottom: 8 }} />
             <div className="stat-number" style={{ color: '#f5222d' }}>{data.transportDeliveryStats.totalClaims}</div>
             <div className="stat-label">理赔总数</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <TeamOutlined style={{ fontSize: 32, color: '#722ed1', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#722ed1' }}>{data.total.docentVolunteers}</div>
+            <div className="stat-label">志愿者人数</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <SoundOutlined style={{ fontSize: 32, color: '#13c2c2', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#13c2c2' }}>{data.total.docentActivities}</div>
+            <div className="stat-label">讲解活动数</div>
           </div>
         </Col>
       </Row>
@@ -901,6 +953,273 @@ function StatisticsPage() {
           </div>
         </Col>
       </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} md={8}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <SoundOutlined style={{ color: '#13c2c2', marginRight: 8 }} />
+              讲解活动完成率
+              <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 400, color: '#666' }}>
+                已结束 {data.docentActivityStats.completedCount} / {data.docentActivityStats.totalActivities}
+              </span>
+            </h3>
+            <div style={{ padding: '12px 0', textAlign: 'center' }}>
+              <Progress
+                type="circle"
+                percent={data.docentActivityStats.completionRate}
+                size={150}
+                strokeColor={{
+                  '0%': '#13c2c2',
+                  '100%': '#52c41a'
+                }}
+                format={(percent) => `${percent}%`}
+              />
+            </div>
+            <Row gutter={8} style={{ marginTop: 16 }}>
+              {Object.entries(DOCENT_ACTIVITY_STATUS_MAP).map(([key, label]) => (
+                <Col span={6} key={key}>
+                  <Card size="small" style={{ textAlign: 'center' }}>
+                    <Tag color={DOCENT_ACTIVITY_STATUS_COLOR[key as keyof typeof DOCENT_ACTIVITY_STATUS_COLOR]} style={{ margin: 0 }}>
+                      {label}
+                    </Tag>
+                    <div style={{ fontSize: 18, fontWeight: 600, marginTop: 6 }}>
+                      {data.docentActivityStats.byStatus[key] || 0}
+                    </div>
+                  </Card>
+                </Col>
+              ))}
+            </Row>
+          </div>
+        </Col>
+
+        <Col xs={24} md={8}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <TrophyOutlined style={{ color: '#faad14', marginRight: 8 }} />
+              志愿者服务次数排行
+            </h3>
+            {data.docentActivityStats.volunteerServiceRanking && data.docentActivityStats.volunteerServiceRanking.length > 0 ? (
+              <List
+                dataSource={data.docentActivityStats.volunteerServiceRanking.slice(0, 10)}
+                renderItem={(item, index) => (
+                  <List.Item style={{ padding: '10px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: index < 3 ? '#faad14' : '#d9d9d9',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 600,
+                        marginRight: 12,
+                        fontSize: 12
+                      }}>
+                        {index + 1}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500 }}>{item.name}</div>
+                        <div style={{ fontSize: 12, color: '#999' }}>
+                          {item.expertiseCategory || '-'} · {item.organization || '-'}
+                        </div>
+                      </div>
+                      <Tag color="gold" style={{ margin: 0 }}>{item.count} 次</Tag>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                暂无志愿者服务记录
+              </div>
+            )}
+          </div>
+        </Col>
+
+        <Col xs={24} md={8}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <EnvironmentOutlined style={{ color: '#eb2f96', marginRight: 8 }} />
+              各场地讲解活动分布
+            </h3>
+            {data.docentActivityStats.venueDistribution && data.docentActivityStats.venueDistribution.length > 0 ? (
+              <List
+                dataSource={data.docentActivityStats.venueDistribution}
+                renderItem={(item, index) => (
+                  <List.Item style={{ padding: '10px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: index < 3 ? '#eb2f96' : '#d9d9d9',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 600,
+                        marginRight: 12,
+                        fontSize: 12
+                      }}>
+                        {index + 1}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500 }}>{item.venueName}</div>
+                      </div>
+                      <Tag color="magenta" style={{ margin: 0 }}>{item.count} 场</Tag>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                暂无场地讲解记录
+              </div>
+            )}
+          </div>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} md={12}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <TrophyOutlined style={{ color: '#faad14', marginRight: 8 }} />
+              作品被讲解次数排行
+            </h3>
+            {data.docentActivityStats.artworkDocentRanking && data.docentActivityStats.artworkDocentRanking.length > 0 ? (
+              <List
+                dataSource={data.docentActivityStats.artworkDocentRanking.slice(0, 10)}
+                renderItem={(item, index) => (
+                  <List.Item style={{ padding: '10px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: index < 3 ? '#faad14' : '#d9d9d9',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 600,
+                        marginRight: 12,
+                        fontSize: 12
+                      }}>
+                        {index + 1}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500 }}>{item.title}</div>
+                        <div style={{ fontSize: 12, color: '#999' }}>作者：{item.author}</div>
+                      </div>
+                      <Tag color="gold" style={{ margin: 0 }}>{item.count} 次</Tag>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                暂无作品讲解记录
+              </div>
+            )}
+          </div>
+        </Col>
+
+        <Col xs={24} md={12}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <ClockCircleOutlined style={{ color: '#1890ff', marginRight: 8 }} />
+              未来七天待讲解清单
+            </h3>
+            {data.docentActivityStats.upcomingDocentList && data.docentActivityStats.upcomingDocentList.length > 0 ? (
+              <List
+                dataSource={data.docentActivityStats.upcomingDocentList}
+                renderItem={(item) => (
+                  <List.Item style={{ padding: '12px 0' }}>
+                    <div style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ fontWeight: 500 }}>{item.theme}</span>
+                        <Tag color="blue">{item.artworkCount} 件作品</Tag>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                        <EnvironmentOutlined style={{ marginRight: 4 }} />
+                        {item.venueName} · {item.bookingUnit}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                        <CalendarOutlined style={{ marginRight: 4 }} />
+                        {item.docentDate} {item.startTime}-{item.endTime}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#999', marginBottom: item.volunteers?.length ? 4 : 0 }}>
+                        <TeamOutlined style={{ marginRight: 4 }} />
+                        负责人：{item.manager || '-'} · 预计 {item.expectedAttendees} 人
+                      </div>
+                      {item.volunteers && item.volunteers.length > 0 && (
+                        <div style={{ marginTop: 4 }}>
+                          {item.volunteers.map(v => (
+                            <Tag key={v.id} style={{ marginBottom: 4 }}>{v.name}（{v.role}）</Tag>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                <CheckCircleOutlined style={{ fontSize: 40, color: '#52c41a', marginBottom: 12 }} />
+                <div>未来七天暂无讲解任务</div>
+              </div>
+            )}
+          </div>
+        </Col>
+      </Row>
+
+      {data.docentActivityStats.conflictCount > 0 && (
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col xs={24} md={24}>
+            <div className="page-card">
+              <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+                <WarningOutlined style={{ color: '#f5222d', marginRight: 8 }} />
+                排班冲突明细
+                <span style={{ marginLeft: 12, fontSize: 14, fontWeight: 400, color: '#f5222d' }}>
+                  共 {data.docentActivityStats.conflictCount} 处冲突
+                </span>
+              </h3>
+              {data.docentActivityStats.conflictDetails && data.docentActivityStats.conflictDetails.length > 0 ? (
+                <List
+                  grid={{ gutter: 16, column: 3, xs: 1, sm: 2, md: 3 }}
+                  dataSource={data.docentActivityStats.conflictDetails}
+                  renderItem={(item) => (
+                    <List.Item>
+                      <Card size="small" style={{ borderColor: '#ffccc7' }}>
+                        <div style={{ fontWeight: 500, marginBottom: 6 }}>
+                          <TeamOutlined style={{ marginRight: 6, color: '#f5222d' }} />
+                          {item.volunteerName}
+                        </div>
+                        <div style={{ fontSize: 13, color: '#666', marginBottom: 4 }}>
+                          <SoundOutlined style={{ marginRight: 4 }} />
+                          {item.theme}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#999' }}>
+                          <ClockCircleOutlined style={{ marginRight: 4 }} />
+                          {item.docentDate} {item.startTime}-{item.endTime}
+                        </div>
+                      </Card>
+                    </List.Item>
+                  )}
+                />
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px 0', color: '#999' }}>
+                  暂无冲突详情
+                </div>
+              )}
+            </div>
+          </Col>
+        </Row>
+      )}
     </div>
   );
 }

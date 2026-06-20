@@ -9,6 +9,7 @@ import PickupsPage from './pages/PickupsPage';
 import HandoversPage from './pages/HandoversPage';
 import RevenuesPage from './pages/RevenuesPage';
 import TransportDeliveriesPage from './pages/TransportDeliveriesPage';
+import DocentSchedulingPage from './pages/DocentSchedulingPage';
 import StatisticsPage from './pages/StatisticsPage';
 
 const { Content } = Layout;
@@ -28,6 +29,7 @@ function App() {
           <Route path="/handovers" element={<HandoversPage />} />
           <Route path="/revenues" element={<RevenuesPage />} />
           <Route path="/transport" element={<TransportDeliveriesPage />} />
+          <Route path="/docent" element={<DocentSchedulingPage />} />
           <Route path="/statistics" element={<StatisticsPage />} />
         </Routes>
       </Content>

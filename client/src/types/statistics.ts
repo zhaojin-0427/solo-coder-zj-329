@@ -1,6 +1,7 @@
 import type { HandoverType, HandoverProcessStatus } from './handover';
 import type { TouringStats } from './touringExhibition';
 import type { ClaimStatus } from './transportDelivery';
+import type { DocentActivityStats } from './docentActivity';
 
 export interface CategoryStats {
   [key: string]: number;
@@ -67,6 +68,8 @@ export interface TotalStats {
   touringExhibitions: number;
   transportBatches: number;
   insuranceClaims: number;
+  docentVolunteers: number;
+  docentActivities: number;
 }
 
 export interface CarrierExceptionRateStat {
@@ -129,5 +132,6 @@ export interface StatisticsData {
   handoverStats: HandoverStats;
   touringStats: TouringStats;
   transportDeliveryStats: TransportDeliveryStats;
+  docentActivityStats: DocentActivityStats;
   total: TotalStats;
 }

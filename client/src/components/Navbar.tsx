@@ -12,6 +12,7 @@ const menuItems = [
   { key: '/handovers', label: '交接清单' },
   { key: '/revenues', label: '收益分配' },
   { key: '/transport', label: '运输交付' },
+  { key: '/docent', label: '讲解排班' },
   { key: '/statistics', label: '统计分析' }
 ];
 

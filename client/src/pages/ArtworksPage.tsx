@@ -23,7 +23,9 @@ import {
   ExclamationCircleOutlined,
   CalendarOutlined,
   EnvironmentOutlined,
-  CarOutlined
+  CarOutlined,
+  SoundOutlined,
+  TeamOutlined
 } from '@ant-design/icons';
 import {
   getArtworks,
@@ -31,7 +33,8 @@ import {
   updateArtwork,
   deleteArtwork,
   getArtworkTouringInfo,
-  getArtworkLatestTransportCheck
+  getArtworkLatestTransportCheck,
+  getArtworkLatestDocentActivity
 } from '../api/artwork';
 import { getHandovers } from '../api/handover';
 import type { Artwork, ArtworkStatus, ArtworkCategory } from '../types/artwork';
@@ -39,6 +42,11 @@ import { ARTWORK_STATUS_MAP, ARTWORK_CATEGORIES } from '../types/artwork';
 import type { HandoverRecord } from '../types/handover';
 import { HANDOVER_TYPE_MAP, HANDOVER_PROCESS_STATUS_MAP } from '../types/handover';
 import type { ArtworkTouringInfo, ArtworkLatestTransportCheck } from '../types/touringExhibition';
+import type { ArtworkLatestDocentActivity } from '../types/docentActivity';
+import {
+  DOCENT_ACTIVITY_STATUS_MAP,
+  DOCENT_ACTIVITY_STATUS_COLOR
+} from '../types/docentActivity';
 import {
   TRANSPORT_STATUS_MAP,
   TRANSPORT_STATUS_COLOR,
@@ -71,6 +79,7 @@ function ArtworksPage() {
   const [viewingRecord, setViewingRecord] = useState<Artwork | null>(null);
   const [viewingTouringInfo, setViewingTouringInfo] = useState<ArtworkTouringInfo | null>(null);
   const [viewingTransportCheck, setViewingTransportCheck] = useState<ArtworkLatestTransportCheck | null>(null);
+  const [viewingDocentActivity, setViewingDocentActivity] = useState<ArtworkLatestDocentActivity | null>(null);
   const [form] = Form.useForm();
   const [categoryFilter, setCategoryFilter] = useState<ArtworkCategory | undefined>();
   const [statusFilter, setStatusFilter] = useState<ArtworkStatus | undefined>();
@@ -127,6 +136,7 @@ function ArtworksPage() {
   const handleViewDetail = async (record: Artwork) => {
     setViewingRecord(record);
     setViewingTransportCheck(null);
+    setViewingDocentActivity(null);
     try {
       const info = await getArtworkTouringInfo(record.id);
       setViewingTouringInfo(info);
@@ -138,6 +148,12 @@ function ArtworksPage() {
       setViewingTransportCheck(transportCheck);
     } catch {
       setViewingTransportCheck(null);
+    }
+    try {
+      const docentActivity = await getArtworkLatestDocentActivity(record.id);
+      setViewingDocentActivity(docentActivity);
+    } catch {
+      setViewingDocentActivity(null);
     }
     setDetailModalVisible(true);
   };
@@ -656,6 +672,64 @@ function ArtworksPage() {
               ) : (
                 <div style={{ color: '#999', padding: '12px 0', textAlign: 'center' }}>
                   暂无运输检查记录
+                </div>
+              )}
+            </div>
+
+            <Divider />
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 16 }}>
+                <SoundOutlined style={{ color: '#13c2c2', marginRight: 6 }} />
+                最近一次参与讲解活动
+              </div>
+              {viewingDocentActivity ? (
+                <Descriptions bordered column={2} size="small">
+                  <Descriptions.Item label="活动主题" span={2}>
+                    {viewingDocentActivity.theme || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="巡展预约">
+                    {viewingDocentActivity.bookingUnit || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="场地">
+                    <EnvironmentOutlined style={{ marginRight: 4 }} />
+                    {viewingDocentActivity.venueName || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="讲解日期">
+                    <CalendarOutlined style={{ marginRight: 4 }} />
+                    {viewingDocentActivity.docentDate} {viewingDocentActivity.startTime}-{viewingDocentActivity.endTime}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="活动状态">
+                    <Tag color={DOCENT_ACTIVITY_STATUS_COLOR[viewingDocentActivity.status]}>
+                      {DOCENT_ACTIVITY_STATUS_MAP[viewingDocentActivity.status]}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="讲解负责人">
+                    <TeamOutlined style={{ marginRight: 4 }} />
+                    {viewingDocentActivity.manager || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="签到人数">
+                    {viewingDocentActivity.actualAttendees !== null
+                      ? `${viewingDocentActivity.actualAttendees} / ${viewingDocentActivity.expectedAttendees} 人`
+                      : `预计 ${viewingDocentActivity.expectedAttendees} 人`}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="讲解志愿者" span={2}>
+                    {viewingDocentActivity.volunteerNames && viewingDocentActivity.volunteerNames.length > 0 ? (
+                      viewingDocentActivity.volunteerNames.map((name, i) => (
+                        <Tag key={i} color="purple" style={{ marginBottom: 4 }}>{name}</Tag>
+                      ))
+                    ) : (
+                      <span style={{ color: '#999' }}>未安排</span>
+                    )}
+                  </Descriptions.Item>
+                  {viewingDocentActivity.audienceFeedback && (
+                    <Descriptions.Item label="观众反馈" span={2}>
+                      {viewingDocentActivity.audienceFeedback}
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
+              ) : (
+                <div style={{ color: '#999', padding: '12px 0', textAlign: 'center' }}>
+                  暂无参与讲解活动记录
                 </div>
               )}
             </div>
