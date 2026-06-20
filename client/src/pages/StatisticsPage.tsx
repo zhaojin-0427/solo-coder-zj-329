@@ -12,12 +12,14 @@ import {
   CarOutlined,
   TrophyOutlined,
   ClockCircleOutlined,
-  FireOutlined
+  FireOutlined,
+  SafetyCertificateOutlined
 } from '@ant-design/icons';
 import { getStatistics } from '../api/statistics';
 import type { StatisticsData } from '../types/statistics';
 import type { HandoverType, HandoverProcessStatus } from '../types/handover';
 import { HANDOVER_TYPE_MAP, HANDOVER_PROCESS_STATUS_MAP } from '../types/handover';
+import { CLAIM_STATUS_MAP, CLAIM_STATUS_COLOR } from '../types/transportDelivery';
 import dayjs from 'dayjs';
 
 const mockStats: StatisticsData = {
@@ -104,6 +106,38 @@ const mockStats: StatisticsData = {
     ],
     conflictCount: 0
   },
+  transportDeliveryStats: {
+    totalBatches: 1,
+    deliveredCount: 1,
+    onTimeRate: 100,
+    onTimeCount: 1,
+    pendingReceiptCount: 0,
+    overdueCount: 0,
+    totalClaims: 1,
+    unsettledClaimsCount: 1,
+    carrierExceptionRate: [
+      { method: '学校专车运输', total: 1, abnormal: 1, exceptionRate: 100 }
+    ],
+    upcomingOutboundList: [],
+    unsettledClaims: [
+      {
+        id: 'clm-001',
+        artworkId: 'art-002',
+        artworkTitle: '喜鹊登梅',
+        artworkAuthor: '张爱华',
+        transportBatchId: 'tp-001',
+        bookingUnit: '阳光社区居委会',
+        responsibleParty: '承运方',
+        claimAmount: 1500,
+        claimStatus: 'processing',
+        handler: '王管理员',
+        handlingDescription: '已联系承运方确认责任，正在协商赔偿金额',
+        createdAt: '2024-07-01T10:30:00.000Z'
+      }
+    ],
+    byStatus: { delivered: 1 },
+    byClaimStatus: { processing: 1 }
+  },
   total: {
     artworks: 8,
     exhibitions: 2,
@@ -111,7 +145,9 @@ const mockStats: StatisticsData = {
     pickupRecords: 3,
     handoverRecords: 6,
     touringVenues: 3,
-    touringExhibitions: 3
+    touringExhibitions: 3,
+    transportBatches: 1,
+    insuranceClaims: 1
   }
 };
 
@@ -252,6 +288,34 @@ function StatisticsPage() {
             <FireOutlined style={{ fontSize: 32, color: '#f5222d', marginBottom: 8 }} />
             <div className="stat-number" style={{ color: '#f5222d' }}>{data.touringStats.conflictCount}</div>
             <div className="stat-label">冲突预约数</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <CarOutlined style={{ fontSize: 32, color: '#fa8c16', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#fa8c16' }}>{data.transportDeliveryStats.totalBatches}</div>
+            <div className="stat-label">运输批次数</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <CheckCircleOutlined style={{ fontSize: 32, color: '#52c41a', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#52c41a' }}>{data.transportDeliveryStats.onTimeRate}%</div>
+            <div className="stat-label">准时送达率</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <ClockCircleOutlined style={{ fontSize: 32, color: '#faad14', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#faad14' }}>{data.transportDeliveryStats.pendingReceiptCount}</div>
+            <div className="stat-label">待签收数量</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <SafetyCertificateOutlined style={{ fontSize: 32, color: '#f5222d', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#f5222d' }}>{data.transportDeliveryStats.totalClaims}</div>
+            <div className="stat-label">理赔总数</div>
           </div>
         </Col>
       </Row>
@@ -698,6 +762,140 @@ function StatisticsPage() {
               <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
                 <CheckCircleOutlined style={{ fontSize: 40, color: '#52c41a', marginBottom: 12 }} />
                 <div>未来七天暂无布展任务</div>
+              </div>
+            )}
+          </div>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} md={8}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <WarningOutlined style={{ color: '#f5222d', marginRight: 8 }} />
+              各承运方式异常率
+            </h3>
+            {data.transportDeliveryStats.carrierExceptionRate && data.transportDeliveryStats.carrierExceptionRate.length > 0 ? (
+              <List
+                dataSource={data.transportDeliveryStats.carrierExceptionRate}
+                renderItem={(item) => (
+                  <List.Item style={{ padding: '10px 0' }}>
+                    <div style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ fontWeight: 500 }}>{item.method}</span>
+                        <Tag color={item.exceptionRate > 0 ? 'red' : 'green'}>{item.exceptionRate}%</Tag>
+                      </div>
+                      <Progress
+                        percent={item.exceptionRate}
+                        size="small"
+                        showInfo={false}
+                        strokeColor="#f5222d"
+                        trailColor="#ffebe6"
+                      />
+                      <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>
+                        异常 {item.abnormal} / 共 {item.total} 批
+                      </div>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                暂无承运数据
+              </div>
+            )}
+          </div>
+        </Col>
+
+        <Col xs={24} md={8}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <CarOutlined style={{ color: '#fa8c16', marginRight: 8 }} />
+              未来七天待出库清单
+            </h3>
+            {data.transportDeliveryStats.upcomingOutboundList && data.transportDeliveryStats.upcomingOutboundList.length > 0 ? (
+              <List
+                dataSource={data.transportDeliveryStats.upcomingOutboundList}
+                renderItem={(item) => (
+                  <List.Item style={{ padding: '12px 0' }}>
+                    <div style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ fontWeight: 500 }}>{item.bookingUnit}</span>
+                        <Tag color="blue">{item.artworkCount} 件作品</Tag>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                        <EnvironmentOutlined style={{ marginRight: 4 }} />
+                        {item.venueName}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                        <ClockCircleOutlined style={{ marginRight: 4 }} />
+                        计划出库：{dayjs(item.plannedOutboundTime).format('MM-DD HH:mm')}
+                        {' · 送达 '}{dayjs(item.plannedArrivalTime).format('MM-DD HH:mm')}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#999' }}>
+                        <CarOutlined style={{ marginRight: 4 }} />
+                        {item.carrierMethod} · {item.carrierContact} {item.carrierPhone}
+                        {item.insuranceAmount > 0 ? ` · 保额 ${item.insuranceAmount} 元` : ''}
+                      </div>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                <CheckCircleOutlined style={{ fontSize: 40, color: '#52c41a', marginBottom: 12 }} />
+                <div>未来七天暂无待出库批次</div>
+              </div>
+            )}
+          </div>
+        </Col>
+
+        <Col xs={24} md={8}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <SafetyCertificateOutlined style={{ color: '#f5222d', marginRight: 8 }} />
+              未结案理赔列表
+            </h3>
+            {data.transportDeliveryStats.unsettledClaims && data.transportDeliveryStats.unsettledClaims.length > 0 ? (
+              <List
+                dataSource={data.transportDeliveryStats.unsettledClaims}
+                renderItem={(item) => (
+                  <List.Item style={{ padding: '12px 0' }}>
+                    <div style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 500 }}>{item.artworkTitle}</span>
+                        <Tag color={CLAIM_STATUS_COLOR[item.claimStatus]}>
+                          {CLAIM_STATUS_MAP[item.claimStatus]}
+                        </Tag>
+                        <Tag color="orange">理赔 {item.claimAmount} 元</Tag>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                        预约单位：{item.bookingUnit} · 责任方：{item.responsibleParty || '-'}
+                      </div>
+                      {item.handlingDescription && (
+                        <div style={{
+                          background: '#fff7e6',
+                          border: '1px solid #ffd591',
+                          borderRadius: 4,
+                          padding: '6px 10px',
+                          color: '#d46b08',
+                          fontSize: 12,
+                          marginBottom: 4
+                        }}>
+                          {item.handlingDescription}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 12, color: '#999' }}>
+                        处理人：{item.handler || '-'} · {dayjs(item.createdAt).format('YYYY-MM-DD HH:mm')}
+                      </div>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                <CheckCircleOutlined style={{ fontSize: 40, color: '#52c41a', marginBottom: 12 }} />
+                <div>暂无未结案理赔</div>
               </div>
             )}
           </div>

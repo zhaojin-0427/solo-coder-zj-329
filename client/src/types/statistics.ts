@@ -1,5 +1,6 @@
 import type { HandoverType, HandoverProcessStatus } from './handover';
 import type { TouringStats } from './touringExhibition';
+import type { ClaimStatus } from './transportDelivery';
 
 export interface CategoryStats {
   [key: string]: number;
@@ -64,6 +65,60 @@ export interface TotalStats {
   handoverRecords: number;
   touringVenues: number;
   touringExhibitions: number;
+  transportBatches: number;
+  insuranceClaims: number;
+}
+
+export interface CarrierExceptionRateStat {
+  method: string;
+  total: number;
+  abnormal: number;
+  exceptionRate: number;
+}
+
+export interface UpcomingOutboundItem {
+  id: string;
+  bookingUnit: string;
+  venueName: string;
+  carrierMethod: string;
+  carrierContact: string;
+  carrierPhone: string;
+  plannedOutboundTime: string;
+  plannedArrivalTime: string;
+  insuranceAmount: number;
+  artworkCount: number;
+  artworks: Array<{ id: string; title: string; author: string }>;
+}
+
+export interface UnsettledClaimItem {
+  id: string;
+  artworkId: string;
+  artworkTitle: string;
+  artworkAuthor: string;
+  transportBatchId: string;
+  bookingUnit: string;
+  responsibleParty: string;
+  claimAmount: number;
+  claimStatus: ClaimStatus;
+  handler: string;
+  handlingDescription: string;
+  createdAt: string;
+}
+
+export interface TransportDeliveryStats {
+  totalBatches: number;
+  deliveredCount: number;
+  onTimeRate: number;
+  onTimeCount: number;
+  pendingReceiptCount: number;
+  overdueCount: number;
+  totalClaims: number;
+  unsettledClaimsCount: number;
+  carrierExceptionRate: CarrierExceptionRateStat[];
+  upcomingOutboundList: UpcomingOutboundItem[];
+  unsettledClaims: UnsettledClaimItem[];
+  byStatus: { [key: string]: number };
+  byClaimStatus: { [key: string]: number };
 }
 
 export interface StatisticsData {
@@ -73,5 +128,6 @@ export interface StatisticsData {
   uncollectedStats: UncollectedStats;
   handoverStats: HandoverStats;
   touringStats: TouringStats;
+  transportDeliveryStats: TransportDeliveryStats;
   total: TotalStats;
 }

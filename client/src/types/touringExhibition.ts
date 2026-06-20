@@ -1,4 +1,5 @@
 import type { ArtworkStatus, ArtworkCategory } from './artwork';
+import type { TransportStatus } from './transportDelivery';
 
 export type TouringExhibitionReviewStatus = 'pending' | 'approved' | 'rejected' | 'canceled';
 
@@ -42,6 +43,41 @@ export interface TouringExhibition {
   venueName?: string;
   venueAddress?: string;
   artworkDetails?: TouringArtworkDetail[];
+  transportBatches?: TouringExhibitionTransportBatch[];
+}
+
+export interface TouringExhibitionTransportBatch {
+  id: string;
+  carrierMethod: string;
+  carrierContact: string;
+  carrierPhone: string;
+  transportStatus: TransportStatus;
+  plannedOutboundTime: string;
+  plannedArrivalTime: string;
+  actualOutboundTime: string;
+  actualArrivalTime: string;
+  siteReceiver: string;
+  trackingNo: string;
+  insuranceAmount: number;
+  policyNo: string;
+  claimCount: number;
+  claimStatus: 'none' | 'pending' | 'settled';
+}
+
+export interface ArtworkLatestTransportCheck {
+  batchId: string;
+  touringExhibitionId: string;
+  bookingUnit: string;
+  venueName: string;
+  carrierMethod: string;
+  transportStatus: TransportStatus;
+  outboundCheckStatus: 'pending' | 'normal' | 'damaged' | 'missing';
+  arrivalCheckStatus: 'pending' | 'normal' | 'damaged' | 'missing';
+  damageDescription: string;
+  receiveConclusion: 'pending' | 'accepted' | 'rejected';
+  triggerClaim: boolean;
+  actualOutboundTime: string;
+  actualArrivalTime: string;
 }
 
 export interface ArtworkTouringInfo {

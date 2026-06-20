@@ -59,6 +59,7 @@ import type { TouringVenue, TouringExhibition, TouringExhibitionReviewStatus } f
 import { TOURING_REVIEW_STATUS_MAP, TOURING_REVIEW_STATUS_COLOR, TRANSPORT_METHOD_OPTIONS } from '../types/touringExhibition';
 import type { Artwork } from '../types/artwork';
 import { ARTWORK_STATUS_MAP, ARTWORK_STATUS_COLOR } from '../types/artwork';
+import { TRANSPORT_STATUS_MAP, TRANSPORT_STATUS_COLOR } from '../types/transportDelivery';
 import dayjs, { Dayjs } from 'dayjs';
 
 const { Option } = Select;
@@ -881,6 +882,56 @@ function TouringExhibitionsPage() {
                   </List.Item>
                 )}
               />
+            </div>
+
+            <Divider />
+            <div>
+              <div style={{ fontWeight: 500, marginBottom: 12 }}>
+                <CarOutlined style={{ marginRight: 6 }} />
+                关联运输批次与理赔状态（共 {detailExhibition.transportBatches?.length || 0} 个批次）
+              </div>
+              {detailExhibition.transportBatches && detailExhibition.transportBatches.length > 0 ? (
+                <List
+                  size="small"
+                  bordered
+                  dataSource={detailExhibition.transportBatches}
+                  renderItem={(batch) => (
+                    <List.Item>
+                      <div style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                          <Tag color={TRANSPORT_STATUS_COLOR[batch.transportStatus]}>
+                            {TRANSPORT_STATUS_MAP[batch.transportStatus]}
+                          </Tag>
+                          <Tag color="blue" icon={<CarOutlined />}>{batch.carrierMethod}</Tag>
+                          <Tag>{batch.carrierContact} {batch.carrierPhone}</Tag>
+                          {batch.claimCount > 0 ? (
+                            <Tag color={batch.claimStatus === 'pending' ? 'orange' : 'green'}>
+                              理赔 {batch.claimCount} 条（{batch.claimStatus === 'pending' ? '处理中' : '已结案'}）
+                            </Tag>
+                          ) : (
+                            <Tag>无理赔</Tag>
+                          )}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#999' }}>
+                          计划出库 {batch.plannedOutboundTime ? dayjs(batch.plannedOutboundTime).format('MM-DD HH:mm') : '-'}
+                          {' · 计划送达 '}{batch.plannedArrivalTime ? dayjs(batch.plannedArrivalTime).format('MM-DD HH:mm') : '-'}
+                          {batch.actualOutboundTime && ` · 实际出库 ${dayjs(batch.actualOutboundTime).format('MM-DD HH:mm')}`}
+                          {batch.actualArrivalTime && ` · 实际送达 ${dayjs(batch.actualArrivalTime).format('MM-DD HH:mm')}`}
+                        </div>
+                        {batch.siteReceiver && (
+                          <div style={{ fontSize: 12, color: '#999' }}>
+                            签收人：{batch.siteReceiver} · 保单号：{batch.policyNo || '-'} · 保额：{batch.insuranceAmount} 元
+                          </div>
+                        )}
+                      </div>
+                    </List.Item>
+                  )}
+                />
+              ) : (
+                <div style={{ color: '#999', padding: '12px 0', textAlign: 'center' }}>
+                  暂无关联运输批次
+                </div>
+              )}
             </div>
           </div>
         )}

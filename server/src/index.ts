@@ -9,6 +9,7 @@ import revenuesRouter from './routes/revenues';
 import handoversRouter from './routes/handovers';
 import touringVenuesRouter from './routes/touringVenues';
 import touringExhibitionsRouter from './routes/touringExhibitions';
+import transportDeliveriesRouter from './routes/transportDeliveries';
 
 const app = express();
 const PORT = 9502;
@@ -25,6 +26,7 @@ app.use('/api/revenues', revenuesRouter);
 app.use('/api/handovers', handoversRouter);
 app.use('/api/touring-venues', touringVenuesRouter);
 app.use('/api/touring-exhibitions', touringExhibitionsRouter);
+app.use('/api/transport-deliveries', transportDeliveriesRouter);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '服务器运行正常' });

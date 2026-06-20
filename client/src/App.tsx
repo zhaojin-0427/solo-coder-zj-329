@@ -8,6 +8,7 @@ import SubscriptionsPage from './pages/SubscriptionsPage';
 import PickupsPage from './pages/PickupsPage';
 import HandoversPage from './pages/HandoversPage';
 import RevenuesPage from './pages/RevenuesPage';
+import TransportDeliveriesPage from './pages/TransportDeliveriesPage';
 import StatisticsPage from './pages/StatisticsPage';
 
 const { Content } = Layout;
@@ -26,6 +27,7 @@ function App() {
           <Route path="/pickups" element={<PickupsPage />} />
           <Route path="/handovers" element={<HandoversPage />} />
           <Route path="/revenues" element={<RevenuesPage />} />
+          <Route path="/transport" element={<TransportDeliveriesPage />} />
           <Route path="/statistics" element={<StatisticsPage />} />
         </Routes>
       </Content>

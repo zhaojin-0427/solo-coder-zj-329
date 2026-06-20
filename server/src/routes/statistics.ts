@@ -19,6 +19,7 @@ router.get('/', (req: Request, res: Response) => {
   const uncollectedStats = getUncollectedStats();
   const handoverStats = getHandoverStats();
   const touringStats = getTouringStats();
+  const transportDeliveryStats = getTransportDeliveryStats();
 
   res.json({
     categoryStats,
@@ -27,6 +28,7 @@ router.get('/', (req: Request, res: Response) => {
     uncollectedStats,
     handoverStats,
     touringStats,
+    transportDeliveryStats,
     total: {
       artworks: store.artworks.length,
       exhibitions: store.exhibitions.length,
@@ -34,7 +36,9 @@ router.get('/', (req: Request, res: Response) => {
       pickupRecords: store.pickupRecords.length,
       handoverRecords: store.handoverRecords.length,
       touringVenues: store.touringVenues.length,
-      touringExhibitions: store.touringExhibitions.length
+      touringExhibitions: store.touringExhibitions.length,
+      transportBatches: store.transportBatches.filter(b => b.transportStatus !== 'canceled').length,
+      insuranceClaims: store.insuranceClaims.length
     }
   });
 });
@@ -269,6 +273,135 @@ function getHandoverStats() {
     byCategory,
     byType,
     byProcessStatus
+  };
+}
+
+function getTransportDeliveryStats() {
+  const activeBatches = store.transportBatches.filter(b => b.transportStatus !== 'canceled');
+  const totalBatches = activeBatches.length;
+
+  const deliveredBatches = activeBatches.filter(b => b.transportStatus === 'delivered');
+  const onTimeBatches = deliveredBatches.filter(
+    b => b.actualArrivalTime &&
+         b.plannedArrivalTime &&
+         new Date(b.actualArrivalTime).getTime() <= new Date(b.plannedArrivalTime).getTime()
+  );
+  const onTimeRate = deliveredBatches.length > 0
+    ? Math.round((onTimeBatches.length / deliveredBatches.length) * 100)
+    : 0;
+
+  const pendingReceiptCount = deliveredBatches.filter(b =>
+    !b.siteReceiver || b.artworkChecks.some(c => c.receiveConclusion === 'pending')
+  ).length;
+
+  const overdueCount = activeBatches.filter(
+    b => b.transportStatus !== 'delivered' &&
+         b.plannedArrivalTime &&
+         new Date(b.plannedArrivalTime).getTime() < Date.now()
+  ).length;
+
+  const totalClaims = store.insuranceClaims.length;
+  const unsettledClaims = store.insuranceClaims
+    .filter(c => c.claimStatus === 'pending' || c.claimStatus === 'processing')
+    .map(c => {
+      const artwork = store.artworks.find(a => a.id === c.artworkId);
+      const batch = store.transportBatches.find(b => b.id === c.transportBatchId);
+      const ex = batch ? store.touringExhibitions.find(e => e.id === batch.touringExhibitionId) : null;
+      return {
+        id: c.id,
+        artworkId: c.artworkId,
+        artworkTitle: artwork?.title || '',
+        artworkAuthor: artwork?.author || '',
+        transportBatchId: c.transportBatchId,
+        bookingUnit: ex?.bookingUnit || '',
+        responsibleParty: c.responsibleParty,
+        claimAmount: c.claimAmount,
+        claimStatus: c.claimStatus,
+        handler: c.handler,
+        handlingDescription: c.handlingDescription,
+        createdAt: c.createdAt
+      };
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const carrierMethodMap: Record<string, { total: number; abnormal: number }> = {};
+  activeBatches.forEach(b => {
+    const method = b.carrierMethod || '未指定';
+    if (!carrierMethodMap[method]) {
+      carrierMethodMap[method] = { total: 0, abnormal: 0 };
+    }
+    carrierMethodMap[method].total++;
+    const hasClaim = store.getClaimsByBatch(b.id).length > 0;
+    const hasDamage = b.artworkChecks.some(
+      c => c.arrivalCheckStatus === 'damaged' || c.arrivalCheckStatus === 'missing'
+    );
+    if (hasClaim || hasDamage) {
+      carrierMethodMap[method].abnormal++;
+    }
+  });
+  const carrierExceptionRate = Object.entries(carrierMethodMap).map(([method, data]) => ({
+    method,
+    total: data.total,
+    abnormal: data.abnormal,
+    exceptionRate: data.total > 0 ? Math.round((data.abnormal / data.total) * 100) : 0
+  })).sort((a, b) => b.exceptionRate - a.exceptionRate);
+
+  const today = new Date();
+  const todayStr = today.toISOString();
+  const next7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const upcomingOutboundList = activeBatches
+    .filter(b =>
+      b.transportStatus === 'pending' &&
+      b.plannedOutboundTime >= todayStr &&
+      b.plannedOutboundTime <= next7Days
+    )
+    .map(b => {
+      const ex = store.touringExhibitions.find(e => e.id === b.touringExhibitionId);
+      const venue = ex ? store.touringVenues.find(v => v.id === ex.venueId) : null;
+      const artworks = b.artworkChecks.map(check => {
+        const a = store.artworks.find(art => art.id === check.artworkId);
+        return a ? { id: a.id, title: a.title, author: a.author } : null;
+      }).filter(Boolean);
+      return {
+        id: b.id,
+        bookingUnit: ex?.bookingUnit || '',
+        venueName: venue?.name || '',
+        carrierMethod: b.carrierMethod,
+        carrierContact: b.carrierContact,
+        carrierPhone: b.carrierPhone,
+        plannedOutboundTime: b.plannedOutboundTime,
+        plannedArrivalTime: b.plannedArrivalTime,
+        insuranceAmount: b.insuranceAmount,
+        artworkCount: b.artworkChecks.length,
+        artworks
+      };
+    })
+    .sort((a, b) => a.plannedOutboundTime.localeCompare(b.plannedOutboundTime));
+
+  const byStatus: Record<string, number> = {};
+  activeBatches.forEach(b => {
+    byStatus[b.transportStatus] = (byStatus[b.transportStatus] || 0) + 1;
+  });
+
+  const byClaimStatus: Record<string, number> = {};
+  store.insuranceClaims.forEach(c => {
+    byClaimStatus[c.claimStatus] = (byClaimStatus[c.claimStatus] || 0) + 1;
+  });
+
+  return {
+    totalBatches,
+    deliveredCount: deliveredBatches.length,
+    onTimeRate,
+    onTimeCount: onTimeBatches.length,
+    pendingReceiptCount,
+    overdueCount,
+    totalClaims,
+    unsettledClaimsCount: unsettledClaims.length,
+    carrierExceptionRate,
+    upcomingOutboundList,
+    unsettledClaims,
+    byStatus,
+    byClaimStatus
   };
 }
 

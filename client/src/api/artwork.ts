@@ -1,7 +1,7 @@
 import request from './request';
 import type { Artwork, ArtworkCategory, ArtworkStatus } from '../types/artwork';
 import type { HandoverRecord } from '../types/handover';
-import type { ArtworkTouringInfo } from '../types/touringExhibition';
+import type { ArtworkTouringInfo, ArtworkLatestTransportCheck } from '../types/touringExhibition';
 
 export interface ArtworkQuery {
   category?: ArtworkCategory;
@@ -23,6 +23,10 @@ export const getArtworkLatestHandover = (id: string): Promise<HandoverRecord | n
 
 export const getArtworkTouringInfo = (id: string): Promise<ArtworkTouringInfo> => {
   return request.get(`/artworks/${id}/touring-info`);
+};
+
+export const getArtworkLatestTransportCheck = (id: string): Promise<ArtworkLatestTransportCheck | null> => {
+  return request.get(`/artworks/${id}/latest-transport-check`);
 };
 
 export const createArtwork = (data: Omit<Artwork, 'id' | 'createdAt' | 'updatedAt'>): Promise<Artwork> => {

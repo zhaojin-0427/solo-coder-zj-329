@@ -11,6 +11,7 @@ const menuItems = [
   { key: '/pickups', label: '取件流转' },
   { key: '/handovers', label: '交接清单' },
   { key: '/revenues', label: '收益分配' },
+  { key: '/transport', label: '运输交付' },
   { key: '/statistics', label: '统计分析' }
 ];
 

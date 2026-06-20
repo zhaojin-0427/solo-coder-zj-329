@@ -57,6 +57,33 @@ router.get('/:id', (req: Request, res: Response) => {
   }
   const venue = store.touringVenues.find(v => v.id === ex.venueId);
   const artworks = ex.artworkIds.map(id => store.artworks.find(a => a.id === id)).filter(Boolean);
+
+  const transportBatches = store.getTransportBatchesByTouring(ex.id).map(batch => {
+    const claims = store.getClaimsByBatch(batch.id);
+    const claimPending = claims.filter(c => c.claimStatus === 'pending' || c.claimStatus === 'processing').length;
+    let claimStatus: 'none' | 'pending' | 'settled' = 'none';
+    if (claims.length > 0) {
+      claimStatus = claimPending > 0 ? 'pending' : 'settled';
+    }
+    return {
+      id: batch.id,
+      carrierMethod: batch.carrierMethod,
+      carrierContact: batch.carrierContact,
+      carrierPhone: batch.carrierPhone,
+      transportStatus: batch.transportStatus,
+      plannedOutboundTime: batch.plannedOutboundTime,
+      plannedArrivalTime: batch.plannedArrivalTime,
+      actualOutboundTime: batch.actualOutboundTime,
+      actualArrivalTime: batch.actualArrivalTime,
+      siteReceiver: batch.siteReceiver,
+      trackingNo: batch.trackingNo,
+      insuranceAmount: batch.insuranceAmount,
+      policyNo: batch.policyNo,
+      claimCount: claims.length,
+      claimStatus
+    };
+  });
+
   res.json({
     ...ex,
     venueName: venue?.name || '',
@@ -67,7 +94,8 @@ router.get('/:id', (req: Request, res: Response) => {
       author: a!.author,
       category: a!.category,
       status: a!.status
-    }))
+    })),
+    transportBatches
   });
 });
 

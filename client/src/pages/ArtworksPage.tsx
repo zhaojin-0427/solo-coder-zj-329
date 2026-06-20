@@ -22,21 +22,31 @@ import {
   EyeOutlined,
   ExclamationCircleOutlined,
   CalendarOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined,
+  CarOutlined
 } from '@ant-design/icons';
 import {
   getArtworks,
   createArtwork,
   updateArtwork,
   deleteArtwork,
-  getArtworkTouringInfo
+  getArtworkTouringInfo,
+  getArtworkLatestTransportCheck
 } from '../api/artwork';
 import { getHandovers } from '../api/handover';
 import type { Artwork, ArtworkStatus, ArtworkCategory } from '../types/artwork';
 import { ARTWORK_STATUS_MAP, ARTWORK_CATEGORIES } from '../types/artwork';
 import type { HandoverRecord } from '../types/handover';
 import { HANDOVER_TYPE_MAP, HANDOVER_PROCESS_STATUS_MAP } from '../types/handover';
-import type { ArtworkTouringInfo } from '../types/touringExhibition';
+import type { ArtworkTouringInfo, ArtworkLatestTransportCheck } from '../types/touringExhibition';
+import {
+  TRANSPORT_STATUS_MAP,
+  TRANSPORT_STATUS_COLOR,
+  TRANSPORT_CHECK_STATUS_MAP,
+  TRANSPORT_CHECK_STATUS_COLOR,
+  TRANSPORT_RECEIVE_CONCLUSION_MAP,
+  TRANSPORT_RECEIVE_CONCLUSION_COLOR
+} from '../types/transportDelivery';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -60,6 +70,7 @@ function ArtworksPage() {
   const [editingRecord, setEditingRecord] = useState<Artwork | null>(null);
   const [viewingRecord, setViewingRecord] = useState<Artwork | null>(null);
   const [viewingTouringInfo, setViewingTouringInfo] = useState<ArtworkTouringInfo | null>(null);
+  const [viewingTransportCheck, setViewingTransportCheck] = useState<ArtworkLatestTransportCheck | null>(null);
   const [form] = Form.useForm();
   const [categoryFilter, setCategoryFilter] = useState<ArtworkCategory | undefined>();
   const [statusFilter, setStatusFilter] = useState<ArtworkStatus | undefined>();
@@ -115,11 +126,18 @@ function ArtworksPage() {
 
   const handleViewDetail = async (record: Artwork) => {
     setViewingRecord(record);
+    setViewingTransportCheck(null);
     try {
       const info = await getArtworkTouringInfo(record.id);
       setViewingTouringInfo(info);
     } catch {
       setViewingTouringInfo(null);
+    }
+    try {
+      const transportCheck = await getArtworkLatestTransportCheck(record.id);
+      setViewingTransportCheck(transportCheck);
+    } catch {
+      setViewingTransportCheck(null);
     }
     setDetailModalVisible(true);
   };
@@ -584,6 +602,60 @@ function ArtworksPage() {
               ) : (
                 <div style={{ color: '#999', padding: '12px 0', textAlign: 'center' }}>
                   暂无巡展信息
+                </div>
+              )}
+            </div>
+
+            <Divider />
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 16 }}>
+                <CarOutlined style={{ color: '#fa8c16', marginRight: 6 }} />
+                最近一次运输检查结论
+              </div>
+              {viewingTransportCheck ? (
+                <Descriptions bordered column={2} size="small">
+                  <Descriptions.Item label="巡展预约">
+                    {viewingTransportCheck.bookingUnit || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="场地">
+                    <EnvironmentOutlined style={{ marginRight: 4 }} />
+                    {viewingTransportCheck.venueName || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="承运方式">
+                    {viewingTransportCheck.carrierMethod || '-'}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="运输状态">
+                    <Tag color={TRANSPORT_STATUS_COLOR[viewingTransportCheck.transportStatus]}>
+                      {TRANSPORT_STATUS_MAP[viewingTransportCheck.transportStatus]}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="出库检查">
+                    <Tag color={TRANSPORT_CHECK_STATUS_COLOR[viewingTransportCheck.outboundCheckStatus]}>
+                      {TRANSPORT_CHECK_STATUS_MAP[viewingTransportCheck.outboundCheckStatus]}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="到场检查">
+                    <Tag color={TRANSPORT_CHECK_STATUS_COLOR[viewingTransportCheck.arrivalCheckStatus]}>
+                      {TRANSPORT_CHECK_STATUS_MAP[viewingTransportCheck.arrivalCheckStatus]}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="签收结论">
+                    <Tag color={TRANSPORT_RECEIVE_CONCLUSION_COLOR[viewingTransportCheck.receiveConclusion]}>
+                      {TRANSPORT_RECEIVE_CONCLUSION_MAP[viewingTransportCheck.receiveConclusion]}
+                    </Tag>
+                  </Descriptions.Item>
+                  <Descriptions.Item label="触发理赔">
+                    {viewingTransportCheck.triggerClaim ? <Tag color="orange">是</Tag> : <Tag>否</Tag>}
+                  </Descriptions.Item>
+                  {viewingTransportCheck.damageDescription && (
+                    <Descriptions.Item label="破损/缺件说明" span={2}>
+                      <span style={{ color: '#ff4d4f' }}>{viewingTransportCheck.damageDescription}</span>
+                    </Descriptions.Item>
+                  )}
+                </Descriptions>
+              ) : (
+                <div style={{ color: '#999', padding: '12px 0', textAlign: 'center' }}>
+                  暂无运输检查记录
                 </div>
               )}
             </div>

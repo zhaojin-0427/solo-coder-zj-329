@@ -79,6 +79,36 @@ router.get('/:id/touring-info', (req: Request, res: Response) => {
   });
 });
 
+router.get('/:id/latest-transport-check', (req: Request, res: Response) => {
+  const artwork = store.artworks.find(a => a.id === req.params.id);
+  if (!artwork) {
+    res.status(404).json({ message: '作品不存在' });
+    return;
+  }
+  const latest = store.getLatestTransportCheckByArtwork(req.params.id);
+  if (!latest) {
+    res.json(null);
+    return;
+  }
+  const ex = store.touringExhibitions.find(e => e.id === latest.batch.touringExhibitionId);
+  const venue = ex ? store.touringVenues.find(v => v.id === ex.venueId) : null;
+  res.json({
+    batchId: latest.batch.id,
+    touringExhibitionId: latest.batch.touringExhibitionId,
+    bookingUnit: ex?.bookingUnit || '',
+    venueName: venue?.name || '',
+    carrierMethod: latest.batch.carrierMethod,
+    transportStatus: latest.batch.transportStatus,
+    outboundCheckStatus: latest.check.outboundCheckStatus,
+    arrivalCheckStatus: latest.check.arrivalCheckStatus,
+    damageDescription: latest.check.damageDescription,
+    receiveConclusion: latest.check.receiveConclusion,
+    triggerClaim: latest.check.triggerClaim,
+    actualOutboundTime: latest.batch.actualOutboundTime,
+    actualArrivalTime: latest.batch.actualArrivalTime
+  });
+});
+
 router.post('/', (req: Request, res: Response) => {
   const { title, author, category, size, material, status, description, theme, exhibitionId } = req.body;
   

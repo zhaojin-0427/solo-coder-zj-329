@@ -114,6 +114,23 @@ body {
   color: #1f2937;
 }
 
+.transport-row-overdue > td {
+  background-color: #fff1f0 !important;
+}
+
+.transport-row-claim > td {
+  background-color: #fff7e6 !important;
+}
+
+.transport-row-pending > td {
+  background-color: #fffbe6 !important;
+}
+
+.transport-row-canceled > td {
+  background-color: #fafafa !important;
+  color: #bfbfbf;
+}
+
 @media (max-width: 768px) {
   .main-content {
     padding: 16px;

@@ -6,6 +6,7 @@ import type { PickupRecord } from '../types/pickup';
 import type { RevenueRecord } from '../types/revenue';
 import type { HandoverRecord, HandoverType, HandoverProcessStatus } from '../types/handover';
 import type { TouringVenue, TouringExhibition, TouringExhibitionReviewStatus } from '../types/touringExhibition';
+import type { TransportBatch, TransportArtworkCheck, InsuranceClaim, TransportStatus, TransportCheckStatus, TransportReceiveConclusion, ClaimStatus } from '../types/transportDelivery';
 
 const now = new Date().toISOString();
 
@@ -462,6 +463,123 @@ const handoverRecords: HandoverRecord[] = [
   }
 ];
 
+const transportBatches: TransportBatch[] = [
+  {
+    id: 'tp-001',
+    touringExhibitionId: 'tour-001',
+    carrierMethod: '学校专车运输',
+    carrierContact: '周师傅',
+    carrierPhone: '13800138010',
+    plannedOutboundTime: '2024-06-30T08:00:00.000Z',
+    plannedArrivalTime: '2024-07-01T10:00:00.000Z',
+    actualOutboundTime: '2024-06-30T08:30:00.000Z',
+    actualArrivalTime: '2024-07-01T09:30:00.000Z',
+    outboundOperator: '王管理员',
+    siteReceiver: '张主任',
+    transportStatus: 'delivered',
+    trackingNo: 'XC-2024-0701-001',
+    insuranceAmount: 8000,
+    policyNo: 'PA-2024-0001',
+    remarks: '社区巡展首批运输，含三件作品',
+    artworkChecks: [
+      {
+        artworkId: 'art-001',
+        outboundCheckStatus: 'normal',
+        arrivalCheckStatus: 'normal',
+        packagingCondition: '木框包装完好',
+        damageDescription: '',
+        receiveConclusion: 'accepted',
+        triggerClaim: false
+      },
+      {
+        artworkId: 'art-002',
+        outboundCheckStatus: 'normal',
+        arrivalCheckStatus: 'damaged',
+        packagingCondition: '外包装轻微变形',
+        damageDescription: '到场后发现剪纸边缘有折痕，疑似运输挤压所致',
+        receiveConclusion: 'accepted',
+        triggerClaim: true
+      },
+      {
+        artworkId: 'art-005',
+        outboundCheckStatus: 'normal',
+        arrivalCheckStatus: 'normal',
+        packagingCondition: '防震包装完好',
+        damageDescription: '',
+        receiveConclusion: 'accepted',
+        triggerClaim: false
+      }
+    ],
+    createdAt: '2024-06-25T10:00:00.000Z',
+    updatedAt: '2024-07-01T09:30:00.000Z'
+  },
+  {
+    id: 'tp-002',
+    touringExhibitionId: 'tour-001',
+    carrierMethod: '第三方物流',
+    carrierContact: '顺达物流',
+    carrierPhone: '13900139010',
+    plannedOutboundTime: '2024-07-08T08:00:00.000Z',
+    plannedArrivalTime: '2024-07-09T12:00:00.000Z',
+    actualOutboundTime: '',
+    actualArrivalTime: '',
+    outboundOperator: '',
+    siteReceiver: '',
+    transportStatus: 'canceled',
+    trackingNo: '',
+    insuranceAmount: 0,
+    policyNo: '',
+    remarks: '展期延长，改用其他批次，本批次取消',
+    artworkChecks: [
+      {
+        artworkId: 'art-001',
+        outboundCheckStatus: 'pending',
+        arrivalCheckStatus: 'pending',
+        packagingCondition: '',
+        damageDescription: '',
+        receiveConclusion: 'pending',
+        triggerClaim: false
+      },
+      {
+        artworkId: 'art-002',
+        outboundCheckStatus: 'pending',
+        arrivalCheckStatus: 'pending',
+        packagingCondition: '',
+        damageDescription: '',
+        receiveConclusion: 'pending',
+        triggerClaim: false
+      },
+      {
+        artworkId: 'art-005',
+        outboundCheckStatus: 'pending',
+        arrivalCheckStatus: 'pending',
+        packagingCondition: '',
+        damageDescription: '',
+        receiveConclusion: 'pending',
+        triggerClaim: false
+      }
+    ],
+    createdAt: '2024-07-05T09:00:00.000Z',
+    updatedAt: '2024-07-05T16:00:00.000Z'
+  }
+];
+
+const insuranceClaims: InsuranceClaim[] = [
+  {
+    id: 'clm-001',
+    artworkId: 'art-002',
+    transportBatchId: 'tp-001',
+    responsibleParty: '承运方',
+    claimAmount: 1500,
+    claimStatus: 'processing',
+    handler: '王管理员',
+    handlingDescription: '已联系承运方确认责任，正在协商赔偿金额',
+    settleTime: '',
+    createdAt: '2024-07-01T10:30:00.000Z',
+    updatedAt: '2024-07-02T14:00:00.000Z'
+  }
+];
+
 export const store = {
   artworks,
   exhibitions,
@@ -471,6 +589,8 @@ export const store = {
   handoverRecords,
   touringVenues,
   touringExhibitions,
+  transportBatches,
+  insuranceClaims,
 
   addArtwork(artwork: Omit<Artwork, 'id' | 'createdAt' | 'updatedAt'>): Artwork {
     const newArtwork: Artwork = {
@@ -754,5 +874,90 @@ export const store = {
       updatedAt: new Date().toISOString()
     };
     return this.touringExhibitions[index];
+  },
+
+  getActiveTransportBatchByTouring(touringExhibitionId: string): TransportBatch | null {
+    return this.transportBatches.find(
+      b => b.touringExhibitionId === touringExhibitionId && b.transportStatus !== 'canceled'
+    ) || null;
+  },
+
+  getTransportBatchesByTouring(touringExhibitionId: string): TransportBatch[] {
+    return this.transportBatches.filter(b => b.touringExhibitionId === touringExhibitionId);
+  },
+
+  getClaimsByBatch(batchId: string): InsuranceClaim[] {
+    return this.insuranceClaims.filter(c => c.transportBatchId === batchId);
+  },
+
+  getClaimsByArtwork(artworkId: string): InsuranceClaim[] {
+    return this.insuranceClaims.filter(c => c.artworkId === artworkId);
+  },
+
+  addTransportBatch(batch: Omit<TransportBatch, 'id' | 'createdAt' | 'updatedAt'>): TransportBatch {
+    const newBatch: TransportBatch = {
+      ...batch,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.transportBatches.push(newBatch);
+    return newBatch;
+  },
+
+  updateTransportBatch(id: string, updates: Partial<TransportBatch>): TransportBatch | null {
+    const index = this.transportBatches.findIndex(b => b.id === id);
+    if (index === -1) return null;
+    this.transportBatches[index] = {
+      ...this.transportBatches[index],
+      ...updates,
+      id,
+      updatedAt: new Date().toISOString()
+    };
+    return this.transportBatches[index];
+  },
+
+  setTransportArtworkChecks(id: string, artworkChecks: TransportArtworkCheck[]): TransportBatch | null {
+    const index = this.transportBatches.findIndex(b => b.id === id);
+    if (index === -1) return null;
+    this.transportBatches[index] = {
+      ...this.transportBatches[index],
+      artworkChecks,
+      updatedAt: new Date().toISOString()
+    };
+    return this.transportBatches[index];
+  },
+
+  addInsuranceClaim(claim: Omit<InsuranceClaim, 'id' | 'createdAt' | 'updatedAt'>): InsuranceClaim {
+    const newClaim: InsuranceClaim = {
+      ...claim,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.insuranceClaims.push(newClaim);
+    return newClaim;
+  },
+
+  updateInsuranceClaim(id: string, updates: Partial<InsuranceClaim>): InsuranceClaim | null {
+    const index = this.insuranceClaims.findIndex(c => c.id === id);
+    if (index === -1) return null;
+    this.insuranceClaims[index] = {
+      ...this.insuranceClaims[index],
+      ...updates,
+      id,
+      updatedAt: new Date().toISOString()
+    };
+    return this.insuranceClaims[index];
+  },
+
+  getLatestTransportCheckByArtwork(artworkId: string): { batch: TransportBatch; check: TransportArtworkCheck } | null {
+    const checks = this.transportBatches
+      .filter(b => b.transportStatus !== 'canceled')
+      .map(b => ({ batch: b, check: b.artworkChecks.find(c => c.artworkId === artworkId) }))
+      .filter(item => !!item.check)
+      .sort((a, b) => new Date(b.batch.actualOutboundTime || b.batch.plannedOutboundTime || b.batch.createdAt).getTime()
+        - new Date(a.batch.actualOutboundTime || a.batch.plannedOutboundTime || a.batch.createdAt).getTime());
+    return checks.length > 0 ? { batch: checks[0].batch, check: checks[0].check! } : null;
   }
 };
