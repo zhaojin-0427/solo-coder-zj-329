@@ -18,6 +18,7 @@ router.get('/', (req: Request, res: Response) => {
   const authorStats = getAuthorStats();
   const uncollectedStats = getUncollectedStats();
   const handoverStats = getHandoverStats();
+  const touringStats = getTouringStats();
 
   res.json({
     categoryStats,
@@ -25,15 +26,118 @@ router.get('/', (req: Request, res: Response) => {
     authorStats,
     uncollectedStats,
     handoverStats,
+    touringStats,
     total: {
       artworks: store.artworks.length,
       exhibitions: store.exhibitions.length,
       subscriptions: store.subscriptions.length,
       pickupRecords: store.pickupRecords.length,
-      handoverRecords: store.handoverRecords.length
+      handoverRecords: store.handoverRecords.length,
+      touringVenues: store.touringVenues.length,
+      touringExhibitions: store.touringExhibitions.length
     }
   });
 });
+
+function getTouringStats() {
+  const totalBookings = store.touringExhibitions.length;
+  const approvedBookings = store.touringExhibitions.filter(e => e.reviewStatus === 'approved').length;
+  const approvalRate = totalBookings > 0 ? Math.round((approvedBookings / totalBookings) * 100) : 0;
+
+  const venueUsageMap: Record<string, number> = {};
+  store.touringExhibitions
+    .filter(e => e.reviewStatus !== 'canceled' && e.reviewStatus !== 'rejected')
+    .forEach(ex => {
+      const venue = store.touringVenues.find(v => v.id === ex.venueId);
+      if (venue) {
+        venueUsageMap[venue.name] = (venueUsageMap[venue.name] || 0) + 1;
+      }
+    });
+  const venueUsage = Object.entries(venueUsageMap)
+    .map(([venueName, count]) => ({ venueName, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const artworkParticipationMap: Record<string, { artworkId: string; title: string; author: string; count: number }> = {};
+  store.touringExhibitions
+    .filter(e => e.reviewStatus === 'approved')
+    .forEach(ex => {
+      ex.artworkIds.forEach(artworkId => {
+        const artwork = store.artworks.find(a => a.id === artworkId);
+        if (artwork) {
+          if (!artworkParticipationMap[artworkId]) {
+            artworkParticipationMap[artworkId] = {
+              artworkId,
+              title: artwork.title,
+              author: artwork.author,
+              count: 0
+            };
+          }
+          artworkParticipationMap[artworkId].count++;
+        }
+      });
+    });
+  const artworkParticipation = Object.values(artworkParticipationMap)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  const today = new Date();
+  const next7Days = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const todayStr = today.toISOString().split('T')[0];
+  const next7DaysStr = next7Days.toISOString().split('T')[0];
+
+  const upcomingSetupList = store.touringExhibitions
+    .filter(e => {
+      if (e.reviewStatus !== 'approved') return false;
+      return e.startDate >= todayStr && e.startDate <= next7DaysStr;
+    })
+    .map(ex => {
+      const venue = store.touringVenues.find(v => v.id === ex.venueId);
+      const artworks = ex.artworkIds.map(id => {
+        const a = store.artworks.find(art => art.id === id);
+        return a ? { id: a.id, title: a.title, author: a.author } : null;
+      }).filter(Boolean);
+      return {
+        id: ex.id,
+        bookingUnit: ex.bookingUnit,
+        venueId: ex.venueId,
+        venueName: venue?.name || '',
+        venueAddress: venue?.address || '',
+        startDate: ex.startDate,
+        endDate: ex.endDate,
+        artworkCount: ex.artworkIds.length,
+        setupManager: ex.setupManager,
+        transportMethod: ex.transportMethod,
+        artworks
+      };
+    })
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  let conflictCount = 0;
+  const activeExhibitions = store.touringExhibitions.filter(
+    e => e.reviewStatus === 'approved' || e.reviewStatus === 'pending'
+  );
+  for (let i = 0; i < activeExhibitions.length; i++) {
+    for (let j = i + 1; j < activeExhibitions.length; j++) {
+      const ex1 = activeExhibitions[i];
+      const ex2 = activeExhibitions[j];
+      const hasVenueConflict = ex1.venueId === ex2.venueId && store.isDateOverlap(ex1.startDate, ex1.endDate, ex2.startDate, ex2.endDate);
+      const hasArtworkConflict = ex1.artworkIds.some(id => ex2.artworkIds.includes(id)) && store.isDateOverlap(ex1.startDate, ex1.endDate, ex2.startDate, ex2.endDate);
+      if (hasVenueConflict || hasArtworkConflict) {
+        conflictCount++;
+      }
+    }
+  }
+
+  return {
+    totalBookings,
+    approvedBookings,
+    approvalRate,
+    venueUsage,
+    artworkParticipation,
+    upcomingSetupList,
+    conflictCount
+  };
+}
 
 function getCategoryStats() {
   const stats: Record<string, number> = {};

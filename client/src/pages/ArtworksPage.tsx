@@ -9,20 +9,34 @@ import {
   Form,
   message,
   Popconfirm,
-  Tag
+  Tag,
+  Tooltip,
+  Descriptions,
+  Divider
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SearchOutlined,
+  EyeOutlined,
+  ExclamationCircleOutlined,
+  CalendarOutlined,
+  EnvironmentOutlined
+} from '@ant-design/icons';
 import {
   getArtworks,
   createArtwork,
   updateArtwork,
-  deleteArtwork
+  deleteArtwork,
+  getArtworkTouringInfo
 } from '../api/artwork';
 import { getHandovers } from '../api/handover';
 import type { Artwork, ArtworkStatus, ArtworkCategory } from '../types/artwork';
 import { ARTWORK_STATUS_MAP, ARTWORK_CATEGORIES } from '../types/artwork';
 import type { HandoverRecord } from '../types/handover';
 import { HANDOVER_TYPE_MAP, HANDOVER_PROCESS_STATUS_MAP } from '../types/handover';
+import type { ArtworkTouringInfo } from '../types/touringExhibition';
 import dayjs from 'dayjs';
 
 const { Option } = Select;
@@ -42,11 +56,16 @@ function ArtworksPage() {
   const [handovers, setHandovers] = useState<HandoverRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState<Artwork | null>(null);
+  const [viewingRecord, setViewingRecord] = useState<Artwork | null>(null);
+  const [viewingTouringInfo, setViewingTouringInfo] = useState<ArtworkTouringInfo | null>(null);
   const [form] = Form.useForm();
   const [categoryFilter, setCategoryFilter] = useState<ArtworkCategory | undefined>();
   const [statusFilter, setStatusFilter] = useState<ArtworkStatus | undefined>();
   const [keyword, setKeyword] = useState('');
+  
+  const [touringInfoMap, setTouringInfoMap] = useState<Record<string, ArtworkTouringInfo>>({});
 
   const fetchData = async () => {
     setLoading(true);
@@ -69,10 +88,41 @@ function ArtworksPage() {
     }
   };
 
+  const fetchTouringInfo = async (artworkIds: string[]) => {
+    const infoMap: Record<string, ArtworkTouringInfo> = {};
+    await Promise.all(
+      artworkIds.map(async (id) => {
+        try {
+          const info = await getArtworkTouringInfo(id);
+          infoMap[id] = info;
+        } catch {
+        }
+      })
+    );
+    setTouringInfoMap(infoMap);
+  };
+
   useEffect(() => {
     fetchData();
     fetchHandovers();
   }, [categoryFilter, statusFilter, keyword]);
+
+  useEffect(() => {
+    if (artworks.length > 0) {
+      fetchTouringInfo(artworks.map(a => a.id));
+    }
+  }, [artworks]);
+
+  const handleViewDetail = async (record: Artwork) => {
+    setViewingRecord(record);
+    try {
+      const info = await getArtworkTouringInfo(record.id);
+      setViewingTouringInfo(info);
+    } catch {
+      setViewingTouringInfo(null);
+    }
+    setDetailModalVisible(true);
+  };
 
   const getLatestHandover = (artworkId: string): HandoverRecord | null => {
     const records = handovers
@@ -231,12 +281,56 @@ function ArtworksPage() {
       width: 120
     },
     {
+      title: '巡展状态',
+      key: 'touringStatus',
+      width: 140,
+      render: (_: unknown, record: Artwork) => {
+        const info = touringInfoMap[record.id];
+        if (!info || !info.isOccupied) {
+          return <Tag color="default">未占用</Tag>;
+        }
+        return (
+          <Tooltip title={`巡展场地：${info.currentTouring?.venueName || ''}\n展期：${info.currentTouring?.startDate} ~ ${info.currentTouring?.endDate}`}>
+            <Tag color="orange" icon={<ExclamationCircleOutlined />}>
+              巡展占用中
+            </Tag>
+          </Tooltip>
+        );
+      }
+    },
+    {
+      title: '最近巡展',
+      key: 'latestTouring',
+      width: 180,
+      render: (_: unknown, record: Artwork) => {
+        const info = touringInfoMap[record.id];
+        if (!info?.latestTouring) {
+          return <span style={{ color: '#999' }}>暂无</span>;
+        }
+        return (
+          <Tooltip title={`预约单位：${info.latestTouring.bookingUnit}`}>
+            <div>
+              <Tag color="blue" style={{ marginRight: 6 }}>
+                {info.latestTouring.venueName || '-'}
+              </Tag>
+              <div style={{ fontSize: 12, color: '#999' }}>
+                {info.latestTouring.startDate} ~ {info.latestTouring.endDate}
+              </div>
+            </div>
+          </Tooltip>
+        );
+      }
+    },
+    {
       title: '操作',
       key: 'action',
-      width: 160,
+      width: 220,
       fixed: 'right' as const,
       render: (_: unknown, record: Artwork) => (
         <Space size="small">
+          <Button type="link" icon={<EyeOutlined />} onClick={() => handleViewDetail(record)}>
+            详情
+          </Button>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             编辑
           </Button>
@@ -396,6 +490,133 @@ function ArtworksPage() {
             <TextArea rows={3} placeholder="请输入作品描述" />
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="作品详情"
+        open={detailModalVisible}
+        onCancel={() => setDetailModalVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setDetailModalVisible(false)}>
+            关闭
+          </Button>
+        ]}
+        width={720}
+        destroyOnClose
+      >
+        {viewingRecord && (
+          <div>
+            <Descriptions title="基本信息" bordered column={2} size="small">
+              <Descriptions.Item label="作品名称" span={2}>
+                <span style={{ fontWeight: 600, fontSize: 16 }}>{viewingRecord.title}</span>
+              </Descriptions.Item>
+              <Descriptions.Item label="类别">{viewingRecord.category}</Descriptions.Item>
+              <Descriptions.Item label="作者">{viewingRecord.author}</Descriptions.Item>
+              <Descriptions.Item label="尺寸">{viewingRecord.size}</Descriptions.Item>
+              <Descriptions.Item label="材质">{viewingRecord.material}</Descriptions.Item>
+              <Descriptions.Item label="主题">{viewingRecord.theme}</Descriptions.Item>
+              <Descriptions.Item label="状态">
+                {getStatusTag(viewingRecord.status)}
+              </Descriptions.Item>
+              <Descriptions.Item label="创建时间">
+                {dayjs(viewingRecord.createdAt).format('YYYY-MM-DD HH:mm')}
+              </Descriptions.Item>
+              <Descriptions.Item label="描述" span={2}>
+                {viewingRecord.description || '-'}
+              </Descriptions.Item>
+            </Descriptions>
+
+            <Divider />
+
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontWeight: 600, marginBottom: 12, fontSize: 16 }}>
+                <ExclamationCircleOutlined style={{ color: '#faad14', marginRight: 6 }} />
+                巡展占用信息
+              </div>
+              {viewingTouringInfo ? (
+                <div>
+                  <div style={{ marginBottom: 12 }}>
+                    <span style={{ marginRight: 12 }}>当前状态：</span>
+                    {viewingTouringInfo.isOccupied ? (
+                      <Tag color="orange" icon={<ExclamationCircleOutlined />}>
+                        巡展占用中
+                      </Tag>
+                    ) : (
+                      <Tag color="green">未占用</Tag>
+                    )}
+                  </div>
+                  {viewingTouringInfo.currentTouring && (
+                    <Descriptions title="当前巡展" bordered column={2} size="small" style={{ marginBottom: 12 }}>
+                      <Descriptions.Item label="场地">
+                        <EnvironmentOutlined style={{ marginRight: 4 }} />
+                        {viewingTouringInfo.currentTouring.venueName || '-'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="预约单位">
+                        {viewingTouringInfo.currentTouring.bookingUnit}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="展期" span={2}>
+                        <CalendarOutlined style={{ marginRight: 4 }} />
+                        {viewingTouringInfo.currentTouring.startDate} ~ {viewingTouringInfo.currentTouring.endDate}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  )}
+                  {viewingTouringInfo.latestTouring && viewingTouringInfo.latestTouring.id !== viewingTouringInfo.currentTouring?.id && (
+                    <Descriptions title="最近一次巡展预约" bordered column={2} size="small">
+                      <Descriptions.Item label="场地">
+                        <EnvironmentOutlined style={{ marginRight: 4 }} />
+                        {viewingTouringInfo.latestTouring.venueName || '-'}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="预约单位">
+                        {viewingTouringInfo.latestTouring.bookingUnit}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="展期" span={2}>
+                        <CalendarOutlined style={{ marginRight: 4 }} />
+                        {viewingTouringInfo.latestTouring.startDate} ~ {viewingTouringInfo.latestTouring.endDate}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  )}
+                  {!viewingTouringInfo.latestTouring && (
+                    <div style={{ color: '#999', padding: '12px 0', textAlign: 'center' }}>
+                      暂无巡展预约记录
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div style={{ color: '#999', padding: '12px 0', textAlign: 'center' }}>
+                  暂无巡展信息
+                </div>
+              )}
+            </div>
+
+            {getLatestHandover(viewingRecord.id) && (
+              <>
+                <Divider />
+                <Descriptions title="最近交接记录" bordered column={2} size="small">
+                  <Descriptions.Item label="交接类型">
+                    {(() => {
+                      const h = getLatestHandover(viewingRecord.id)!;
+                      const typeColor: Record<string, string> = { entry: 'blue', sale: 'green', return: 'orange' };
+                      return <Tag color={typeColor[h.type]}>{HANDOVER_TYPE_MAP[h.type]}</Tag>;
+                    })()}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="处理状态">
+                    {(() => {
+                      const h = getLatestHandover(viewingRecord.id)!;
+                      const statusColor: Record<string, string> = { pending: 'red', processing: 'gold', resolved: 'green' };
+                      return <Tag color={statusColor[h.processStatus]}>{HANDOVER_PROCESS_STATUS_MAP[h.processStatus]}</Tag>;
+                    })()}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="交接人">
+                    {getLatestHandover(viewingRecord.id)!.handlerName}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="交接时间">
+                    {dayjs(getLatestHandover(viewingRecord.id)!.handoverTime).format('YYYY-MM-DD HH:mm')}
+                  </Descriptions.Item>
+                </Descriptions>
+              </>
+            )}
+          </div>
+        )}
       </Modal>
     </div>
   );

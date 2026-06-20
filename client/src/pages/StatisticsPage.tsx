@@ -7,7 +7,12 @@ import {
   InboxOutlined,
   SwapOutlined,
   WarningOutlined,
-  CheckCircleOutlined
+  CheckCircleOutlined,
+  EnvironmentOutlined,
+  CarOutlined,
+  TrophyOutlined,
+  ClockCircleOutlined,
+  FireOutlined
 } from '@ant-design/icons';
 import { getStatistics } from '../api/statistics';
 import type { StatisticsData } from '../types/statistics';
@@ -65,7 +70,49 @@ const mockStats: StatisticsData = {
     byType: { entry: 1, return: 2 },
     byProcessStatus: { pending: 1, processing: 1, resolved: 4 }
   },
-  total: { artworks: 8, exhibitions: 2, subscriptions: 5, pickupRecords: 3, handoverRecords: 6 }
+  touringStats: {
+    totalBookings: 3,
+    approvedBookings: 1,
+    approvalRate: 33,
+    venueUsage: [
+      { venueName: '阳光社区活动中心', count: 1 },
+      { venueName: '幸福养老院', count: 1 },
+      { venueName: '市图书馆一楼展厅', count: 1 }
+    ],
+    artworkParticipation: [
+      { artworkId: 'art-001', title: '宁静致远', author: '王羲之', count: 2 },
+      { artworkId: 'art-002', title: '喜鹊登梅', author: '张爱华', count: 2 },
+      { artworkId: 'art-005', title: '龙凤呈祥', author: '陈刻石', count: 1 }
+    ],
+    upcomingSetupList: [
+      {
+        id: 'tour-001',
+        bookingUnit: '阳光社区居委会',
+        venueId: 'venue-001',
+        venueName: '阳光社区活动中心',
+        venueAddress: '北京市朝阳区阳光路88号',
+        startDate: '2024-07-01',
+        endDate: '2024-07-07',
+        artworkCount: 3,
+        setupManager: '王管理员',
+        transportMethod: '学校专车运输',
+        artworks: [
+          { id: 'art-001', title: '宁静致远', author: '王羲之' },
+          { id: 'art-002', title: '喜鹊登梅', author: '张爱华' }
+        ]
+      }
+    ],
+    conflictCount: 0
+  },
+  total: {
+    artworks: 8,
+    exhibitions: 2,
+    subscriptions: 5,
+    pickupRecords: 3,
+    handoverRecords: 6,
+    touringVenues: 3,
+    touringExhibitions: 3
+  }
 };
 
 function StatisticsPage() {
@@ -177,6 +224,34 @@ function StatisticsPage() {
             <WarningOutlined style={{ fontSize: 32, color: '#f5222d', marginBottom: 8 }} />
             <div className="stat-number" style={{ color: '#f5222d' }}>{data.handoverStats.totalExceptions}</div>
             <div className="stat-label">交接异常数</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <EnvironmentOutlined style={{ fontSize: 32, color: '#eb2f96', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#eb2f96' }}>{data.total.touringVenues}</div>
+            <div className="stat-label">巡展场地数</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <CarOutlined style={{ fontSize: 32, color: '#fa8c16', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#fa8c16' }}>{data.touringStats.totalBookings}</div>
+            <div className="stat-label">巡展预约总数</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <TrophyOutlined style={{ fontSize: 32, color: '#a0d911', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#a0d911' }}>{data.touringStats.approvalRate}%</div>
+            <div className="stat-label">审核通过率</div>
+          </div>
+        </Col>
+        <Col xs={12} sm={12} md={4}>
+          <div className="stat-card">
+            <FireOutlined style={{ fontSize: 32, color: '#f5222d', marginBottom: 8 }} />
+            <div className="stat-number" style={{ color: '#f5222d' }}>{data.touringStats.conflictCount}</div>
+            <div className="stat-label">冲突预约数</div>
           </div>
         </Col>
       </Row>
@@ -482,6 +557,147 @@ function StatisticsPage() {
             ) : (
               <div style={{ textAlign: 'center', padding: '20px 0', color: '#999' }}>
                 暂无待取件记录
+              </div>
+            )}
+          </div>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} md={8}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <EnvironmentOutlined style={{ color: '#eb2f96', marginRight: 8 }} />
+              各场地使用次数
+            </h3>
+            {data.touringStats.venueUsage && data.touringStats.venueUsage.length > 0 ? (
+              <List
+                dataSource={data.touringStats.venueUsage}
+                renderItem={(item, index) => (
+                  <List.Item style={{ padding: '10px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: index < 3 ? '#eb2f96' : '#d9d9d9',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 600,
+                        marginRight: 12,
+                        fontSize: 12
+                      }}>
+                        {index + 1}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500 }}>{item.venueName}</div>
+                      </div>
+                      <Tag color="magenta" style={{ margin: 0 }}>{item.count} 次</Tag>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                暂无场地使用记录
+              </div>
+            )}
+          </div>
+        </Col>
+
+        <Col xs={24} md={8}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <TrophyOutlined style={{ color: '#faad14', marginRight: 8 }} />
+              作品巡展参与次数
+            </h3>
+            {data.touringStats.artworkParticipation && data.touringStats.artworkParticipation.length > 0 ? (
+              <List
+                dataSource={data.touringStats.artworkParticipation}
+                renderItem={(item, index) => (
+                  <List.Item style={{ padding: '10px 0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+                      <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: '50%',
+                        background: index < 3 ? '#faad14' : '#d9d9d9',
+                        color: '#fff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 600,
+                        marginRight: 12,
+                        fontSize: 12
+                      }}>
+                        {index + 1}
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 500 }}>{item.title}</div>
+                        <div style={{ fontSize: 12, color: '#999' }}>作者：{item.author}</div>
+                      </div>
+                      <Tag color="gold" style={{ margin: 0 }}>{item.count} 次</Tag>
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                暂无作品参与记录
+              </div>
+            )}
+          </div>
+        </Col>
+
+        <Col xs={24} md={8}>
+          <div className="page-card">
+            <h3 style={{ fontSize: 18, fontWeight: 600, marginBottom: 16 }}>
+              <ClockCircleOutlined style={{ color: '#1890ff', marginRight: 8 }} />
+              未来七天待布展
+            </h3>
+            {data.touringStats.upcomingSetupList && data.touringStats.upcomingSetupList.length > 0 ? (
+              <List
+                dataSource={data.touringStats.upcomingSetupList}
+                renderItem={(item) => (
+                  <List.Item style={{ padding: '12px 0' }}>
+                    <div style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ fontWeight: 500 }}>{item.bookingUnit}</span>
+                        <Tag color="blue">{item.artworkCount} 件作品</Tag>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                        <EnvironmentOutlined style={{ marginRight: 4 }} />
+                        {item.venueName}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                        <CalendarOutlined style={{ marginRight: 4 }} />
+                        {item.startDate} ~ {item.endDate}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#999' }}>
+                        <TeamOutlined style={{ marginRight: 4 }} />
+                        负责人：{item.setupManager || '未指定'}
+                        {item.transportMethod ? ` · ${item.transportMethod}` : ''}
+                      </div>
+                      {item.artworks && item.artworks.length > 0 && (
+                        <div style={{ marginTop: 6 }}>
+                          {item.artworks.slice(0, 3).map(a => (
+                            <Tag key={a.id} style={{ marginBottom: 4 }}>{a.title}</Tag>
+                          ))}
+                          {item.artworks.length > 3 && (
+                            <Tag>等 {item.artworks.length} 件</Tag>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ textAlign: 'center', padding: '40px 0', color: '#999' }}>
+                <CheckCircleOutlined style={{ fontSize: 40, color: '#52c41a', marginBottom: 12 }} />
+                <div>未来七天暂无布展任务</div>
               </div>
             )}
           </div>

@@ -6,6 +6,7 @@ const { Header } = Layout;
 const menuItems = [
   { key: '/artworks', label: '作品档案' },
   { key: '/exhibitions', label: '展期管理' },
+  { key: '/touring', label: '巡展预约' },
   { key: '/subscriptions', label: '认购登记' },
   { key: '/pickups', label: '取件流转' },
   { key: '/handovers', label: '交接清单' },

@@ -49,6 +49,36 @@ router.get('/:id/latest-handover', (req: Request, res: Response) => {
   res.json(latest);
 });
 
+router.get('/:id/touring-info', (req: Request, res: Response) => {
+  const artwork = store.artworks.find(a => a.id === req.params.id);
+  if (!artwork) {
+    res.status(404).json({ message: '作品不存在' });
+    return;
+  }
+  const touringInfo = store.getArtworkTouringInfo(req.params.id);
+  let latestWithVenue = null;
+  if (touringInfo.latestTouring) {
+    const venue = store.touringVenues.find(v => v.id === touringInfo.latestTouring!.venueId);
+    latestWithVenue = {
+      ...touringInfo.latestTouring,
+      venueName: venue?.name || ''
+    };
+  }
+  let currentWithVenue = null;
+  if (touringInfo.currentTouring) {
+    const venue = store.touringVenues.find(v => v.id === touringInfo.currentTouring!.venueId);
+    currentWithVenue = {
+      ...touringInfo.currentTouring,
+      venueName: venue?.name || ''
+    };
+  }
+  res.json({
+    isOccupied: touringInfo.isOccupied,
+    currentTouring: currentWithVenue,
+    latestTouring: latestWithVenue
+  });
+});
+
 router.post('/', (req: Request, res: Response) => {
   const { title, author, category, size, material, status, description, theme, exhibitionId } = req.body;
   

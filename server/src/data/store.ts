@@ -5,6 +5,7 @@ import type { Subscription } from '../types/subscription';
 import type { PickupRecord } from '../types/pickup';
 import type { RevenueRecord } from '../types/revenue';
 import type { HandoverRecord, HandoverType, HandoverProcessStatus } from '../types/handover';
+import type { TouringVenue, TouringExhibition, TouringExhibitionReviewStatus } from '../types/touringExhibition';
 
 const now = new Date().toISOString();
 
@@ -269,6 +270,99 @@ const revenueRecords: RevenueRecord[] = [
   }
 ];
 
+const touringVenues: TouringVenue[] = [
+  {
+    id: 'venue-001',
+    name: '阳光社区活动中心',
+    contactPerson: '张主任',
+    contactPhone: '13800000001',
+    address: '北京市朝阳区阳光路88号',
+    maxArtworkCount: 30,
+    openHours: '周一至周五 9:00-17:00',
+    transportRequirements: '有电梯，可进货车，需提前24小时预约',
+    remarks: '社区老年人口较多，建议多展示书法和剪纸类作品',
+    createdAt: '2024-05-10T10:00:00.000Z',
+    updatedAt: '2024-05-10T10:00:00.000Z'
+  },
+  {
+    id: 'venue-002',
+    name: '幸福养老院',
+    contactPerson: '李院长',
+    contactPhone: '13800000002',
+    address: '北京市海淀区幸福路12号',
+    maxArtworkCount: 20,
+    openHours: '全天开放',
+    transportRequirements: '只能走货梯，尺寸限制2米×1.5米',
+    remarks: '老人居多，作品需便于观赏，建议配解说人员',
+    createdAt: '2024-05-15T09:00:00.000Z',
+    updatedAt: '2024-05-15T09:00:00.000Z'
+  },
+  {
+    id: 'venue-003',
+    name: '市图书馆一楼展厅',
+    contactPerson: '王馆长',
+    contactPhone: '13800000003',
+    address: '北京市西城区文化路66号',
+    maxArtworkCount: 50,
+    openHours: '周二至周日 9:00-20:00',
+    transportRequirements: '专业展厅，有展墙和灯光，大型作品需提前沟通',
+    remarks: '人流量大，建议安排工作人员值守，可配合举办讲座',
+    createdAt: '2024-05-20T14:00:00.000Z',
+    updatedAt: '2024-05-20T14:00:00.000Z'
+  }
+];
+
+const touringExhibitions: TouringExhibition[] = [
+  {
+    id: 'tour-001',
+    bookingUnit: '阳光社区居委会',
+    bookingPerson: '张主任',
+    contactPhone: '13800000001',
+    startDate: '2024-07-01',
+    endDate: '2024-07-07',
+    venueId: 'venue-001',
+    artworkIds: ['art-001', 'art-002', 'art-005'],
+    transportMethod: '学校专车运输',
+    setupManager: '王管理员',
+    reviewStatus: 'approved',
+    rejectionReason: '',
+    createdAt: '2024-06-10T10:00:00.000Z',
+    updatedAt: '2024-06-12T14:30:00.000Z'
+  },
+  {
+    id: 'tour-002',
+    bookingUnit: '幸福养老院活动部',
+    bookingPerson: '赵老师',
+    contactPhone: '13900000001',
+    startDate: '2024-07-15',
+    endDate: '2024-07-21',
+    venueId: 'venue-002',
+    artworkIds: ['art-007', 'art-008'],
+    transportMethod: '第三方物流',
+    setupManager: '李管理员',
+    reviewStatus: 'pending',
+    rejectionReason: '',
+    createdAt: '2024-06-15T11:00:00.000Z',
+    updatedAt: '2024-06-15T11:00:00.000Z'
+  },
+  {
+    id: 'tour-003',
+    bookingUnit: '市图书馆文化宣传部',
+    bookingPerson: '刘老师',
+    contactPhone: '13700000001',
+    startDate: '2024-07-10',
+    endDate: '2024-07-20',
+    venueId: 'venue-003',
+    artworkIds: ['art-001', 'art-002'],
+    transportMethod: '学校专车运输',
+    setupManager: '张管理员',
+    reviewStatus: 'rejected',
+    rejectionReason: '拟展作品数量偏少，建议增加作品数量后重新提交',
+    createdAt: '2024-06-08T09:00:00.000Z',
+    updatedAt: '2024-06-09T16:00:00.000Z'
+  }
+];
+
 const handoverRecords: HandoverRecord[] = [
   {
     id: 'han-001',
@@ -375,6 +469,8 @@ export const store = {
   pickupRecords,
   revenueRecords,
   handoverRecords,
+  touringVenues,
+  touringExhibitions,
 
   addArtwork(artwork: Omit<Artwork, 'id' | 'createdAt' | 'updatedAt'>): Artwork {
     const newArtwork: Artwork = {
@@ -522,5 +618,141 @@ export const store = {
       .filter(h => h.artworkId === artworkId)
       .sort((a, b) => new Date(b.handoverTime).getTime() - new Date(a.handoverTime).getTime());
     return records.length > 0 ? records[0] : null;
+  },
+
+  addTouringVenue(venue: Omit<TouringVenue, 'id' | 'createdAt' | 'updatedAt'>): TouringVenue {
+    const newVenue: TouringVenue = {
+      ...venue,
+      id: uuidv4(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.touringVenues.push(newVenue);
+    return newVenue;
+  },
+
+  updateTouringVenue(id: string, updates: Partial<TouringVenue>): TouringVenue | null {
+    const index = this.touringVenues.findIndex(v => v.id === id);
+    if (index === -1) return null;
+    this.touringVenues[index] = {
+      ...this.touringVenues[index],
+      ...updates,
+      id,
+      updatedAt: new Date().toISOString()
+    };
+    return this.touringVenues[index];
+  },
+
+  deleteTouringVenue(id: string): boolean {
+    const index = this.touringVenues.findIndex(v => v.id === id);
+    if (index === -1) return false;
+    this.touringVenues.splice(index, 1);
+    return true;
+  },
+
+  isDateOverlap(start1: string, end1: string, start2: string, end2: string): boolean {
+    const s1 = new Date(start1).getTime();
+    const e1 = new Date(end1).getTime();
+    const s2 = new Date(start2).getTime();
+    const e2 = new Date(end2).getTime();
+    return s1 <= e2 && s2 <= e1;
+  },
+
+  checkVenueConflict(venueId: string, startDate: string, endDate: string, excludeId?: string): TouringExhibition | null {
+    for (const ex of this.touringExhibitions) {
+      if (ex.id === excludeId) continue;
+      if (ex.reviewStatus === 'canceled' || ex.reviewStatus === 'rejected') continue;
+      if (ex.venueId !== venueId) continue;
+      if (this.isDateOverlap(startDate, endDate, ex.startDate, ex.endDate)) {
+        return ex;
+      }
+    }
+    return null;
+  },
+
+  checkArtworkConflict(artworkIds: string[], startDate: string, endDate: string, excludeId?: string): string[] {
+    const conflictArtworks: string[] = [];
+    for (const artworkId of artworkIds) {
+      for (const ex of this.touringExhibitions) {
+        if (ex.id === excludeId) continue;
+        if (ex.reviewStatus === 'canceled' || ex.reviewStatus === 'rejected') continue;
+        if (!ex.artworkIds.includes(artworkId)) continue;
+        if (this.isDateOverlap(startDate, endDate, ex.startDate, ex.endDate)) {
+          if (!conflictArtworks.includes(artworkId)) {
+            conflictArtworks.push(artworkId);
+          }
+          break;
+        }
+      }
+    }
+    return conflictArtworks;
+  },
+
+  getArtworkTouringInfo(artworkId: string): { isOccupied: boolean; currentTouring: TouringExhibition | null; latestTouring: TouringExhibition | null } {
+    const now = new Date().toISOString().split('T')[0];
+    const relevantExhibitions = this.touringExhibitions
+      .filter(ex => ex.artworkIds.includes(artworkId) && ex.reviewStatus === 'approved');
+    
+    const currentTouring = relevantExhibitions.find(ex => 
+      this.isDateOverlap(now, now, ex.startDate, ex.endDate)
+    ) || null;
+
+    const latestTouring = relevantExhibitions.length > 0
+      ? relevantExhibitions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]
+      : null;
+
+    return {
+      isOccupied: !!currentTouring,
+      currentTouring,
+      latestTouring
+    };
+  },
+
+  addTouringExhibition(exhibition: Omit<TouringExhibition, 'id' | 'createdAt' | 'updatedAt' | 'reviewStatus' | 'rejectionReason'>): TouringExhibition {
+    const newExhibition: TouringExhibition = {
+      ...exhibition,
+      id: uuidv4(),
+      reviewStatus: 'pending',
+      rejectionReason: '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    this.touringExhibitions.push(newExhibition);
+    return newExhibition;
+  },
+
+  updateTouringExhibition(id: string, updates: Partial<TouringExhibition>): TouringExhibition | null {
+    const index = this.touringExhibitions.findIndex(e => e.id === id);
+    if (index === -1) return null;
+    this.touringExhibitions[index] = {
+      ...this.touringExhibitions[index],
+      ...updates,
+      id,
+      updatedAt: new Date().toISOString()
+    };
+    return this.touringExhibitions[index];
+  },
+
+  reviewTouringExhibition(id: string, status: 'approved' | 'rejected', rejectionReason?: string): TouringExhibition | null {
+    const index = this.touringExhibitions.findIndex(e => e.id === id);
+    if (index === -1) return null;
+    this.touringExhibitions[index] = {
+      ...this.touringExhibitions[index],
+      reviewStatus: status,
+      rejectionReason: status === 'rejected' ? (rejectionReason || '') : '',
+      updatedAt: new Date().toISOString()
+    };
+    return this.touringExhibitions[index];
+  },
+
+  cancelTouringExhibition(id: string): TouringExhibition | null {
+    const index = this.touringExhibitions.findIndex(e => e.id === id);
+    if (index === -1) return null;
+    this.touringExhibitions[index] = {
+      ...this.touringExhibitions[index],
+      reviewStatus: 'canceled',
+      updatedAt: new Date().toISOString()
+    };
+    return this.touringExhibitions[index];
   }
 };

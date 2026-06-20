@@ -1,4 +1,5 @@
 import type { HandoverType, HandoverProcessStatus } from './handover';
+import type { TouringStats } from './touringExhibition';
 
 export interface CategoryStats {
   [key: string]: number;
@@ -61,6 +62,8 @@ export interface TotalStats {
   subscriptions: number;
   pickupRecords: number;
   handoverRecords: number;
+  touringVenues: number;
+  touringExhibitions: number;
 }
 
 export interface StatisticsData {
@@ -69,5 +72,6 @@ export interface StatisticsData {
   authorStats: AuthorStat[];
   uncollectedStats: UncollectedStats;
   handoverStats: HandoverStats;
+  touringStats: TouringStats;
   total: TotalStats;
 }
